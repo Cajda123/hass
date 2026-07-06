@@ -1,0 +1,34 @@
+###############################################################################
+# EMS AI COMMENTATOR - Home Assistant side
+#
+# Node-RED publishes:
+#   ems/ai/comment  -> plain text comment
+#   ems/ai/status   -> JSON metadata
+#   ems/ai/error    -> plain text or JSON error
+###############################################################################
+
+mqtt:
+  sensor:
+    - name: "EMS AI komentář"
+      unique_id: ems_ai_comment
+      state_topic: "ems/ai/comment"
+      icon: mdi:robot-happy
+
+    - name: "EMS AI stav"
+      unique_id: ems_ai_status
+      state_topic: "ems/ai/status"
+      icon: mdi:robot-outline
+      value_template: >-
+        {{ value_json.state | default('unknown') }}
+      json_attributes_topic: "ems/ai/status"
+
+    - name: "EMS AI poslední chyba"
+      unique_id: ems_ai_last_error
+      state_topic: "ems/ai/error"
+      icon: mdi:robot-confused
+
+# Lovelace mini card example:
+# type: markdown
+# content: >
+#   ## 🧠 EMS AI
+#   {{ states('sensor.ems_ai_komentar') }}
