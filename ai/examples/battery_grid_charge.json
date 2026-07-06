@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-07-05T03:20:00.000Z",
+  "event": {
+    "topic": "ems/battery_grid",
+    "type": "battery_grid",
+    "key": "battery_grid:charging:hdo_low_soc_target",
+    "importance": "important",
+    "status": "CHARGING",
+    "status_display": "Baterie se dobíjí ze sítě",
+    "reason": "cheap_tariff_low_soc",
+    "reason_display": "Levný tarif a SOC pod cílem",
+    "notify": false,
+    "speak": false
+  },
+  "core": {
+    "ems_enabled": true,
+    "hdo_state": "NT",
+    "battery_soc": 44,
+    "target_soc": 80,
+    "effective_min_soc": 40,
+    "battery_power": 3200,
+    "pv_power": 0,
+    "grid_power": 3600,
+    "forecast_day_type_tomorrow": "bad"
+  },
+  "battery_grid": {
+    "active": true,
+    "reason_display": "Levný tarif a SOC pod cílem",
+    "target_soc": 80,
+    "current_a": 15
+  }
+}
