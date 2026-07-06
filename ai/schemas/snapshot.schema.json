@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Cajda123/hass/ai/schemas/snapshot.schema.json",
+  "title": "EMS AI Compact Snapshot",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["timestamp", "event"],
+  "properties": {
+    "timestamp": {
+      "type": "string",
+      "description": "ISO timestamp when the snapshot was created."
+    },
+    "event": {
+      "$ref": "event.schema.json"
+    },
+    "core": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "ems_enabled": { "type": "boolean" },
+        "hdo_state": { "type": "string" },
+        "battery_soc": { "type": "number" },
+        "battery_power": { "type": "number" },
+        "pv_power": { "type": "number" },
+        "grid_power": { "type": "number" },
+        "surplus_power": { "type": "number" },
+        "deficit_power": { "type": "number" },
+        "house_power": { "type": "number" },
+        "target_soc": { "type": "number" },
+        "effective_min_soc": { "type": "number" },
+        "forecast_day_type_tomorrow": { "type": "string" }
+      }
+    },
+    "safety": { "type": "object", "additionalProperties": true },
+    "wallbox": { "type": "object", "additionalProperties": true },
+    "boiler": { "type": "object", "additionalProperties": true },
+    "battery_grid": { "type": "object", "additionalProperties": true },
+    "appliances": { "type": "object", "additionalProperties": true }
+  }
+}
