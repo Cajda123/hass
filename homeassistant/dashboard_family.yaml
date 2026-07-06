@@ -1,1 +1,261 @@
-
+title: Náš dům
+path: nas-dum
+icon: mdi:home
+type: custom:grid-layout
+layout:
+  grid-template-columns: 150px 1fr 430px
+  grid-template-rows: auto
+  grid-gap: 14px
+cards:
+  - type: vertical-stack
+    view_layout:
+      grid-column: 1
+    cards:
+      - type: custom:mushroom-title-card
+        title: NÁŠ DŮM
+        subtitle: |
+          Dnes {{ now().strftime('%-d. %-m. %Y, %H:%M') }}
+      - type: custom:mushroom-template-card
+        primary: Přehled
+        icon: mdi:home
+        icon_color: green
+      - type: custom:mushroom-template-card
+        primary: Auta
+        icon: mdi:car
+      - type: custom:mushroom-template-card
+        primary: Baterie domu
+        icon: mdi:battery
+      - type: custom:mushroom-template-card
+        primary: Teplá voda
+        icon: mdi:water-boiler
+      - type: custom:mushroom-template-card
+        primary: Historie
+        icon: mdi:chart-line
+  - type: vertical-stack
+    view_layout:
+      grid-column: 2
+    cards:
+      - type: custom:mushroom-template-card
+        primary: |
+          {% if states('sensor.ems_surplus_power')|float(0) > 1500 %}
+            Máme dost energie
+          {% elif states('sensor.ems_soc_baterie')|float(0) < 45 %}
+            Šetříme baterii
+          {% else %}
+            Dům je v pohodě
+          {% endif %}
+        secondary: |
+          {% if states('sensor.ems_surplus_power')|float(0) > 1500 %}
+            Můžeš klidně pustit pračku, myčku nebo troubu.
+          {% elif states('sensor.ems_soc_baterie')|float(0) < 45 %}
+            Větší spotřebiče radši nech až na levnější proud nebo slunce.
+          {% else %}
+            EMS hlídá dům a všechno běží normálně.
+          {% endif %}
+        icon: |
+          {% if states('sensor.ems_surplus_power')|float(0) > 1500 %}
+            mdi:emoticon-happy
+          {% elif states('sensor.ems_soc_baterie')|float(0) < 45 %}
+            mdi:emoticon-neutral
+          {% else %}
+            mdi:shield-check
+          {% endif %}
+        icon_color: |
+          {% if states('sensor.ems_surplus_power')|float(0) > 1500 %}
+            green
+          {% elif states('sensor.ems_soc_baterie')|float(0) < 45 %}
+            amber
+          {% else %}
+            blue
+          {% endif %}
+        card_mod:
+          style: |
+            ha-card {
+              background: linear-gradient(135deg, #0f6b36, #1cb45a);
+              color: white;
+              border-radius: 18px;
+              padding: 18px;
+              min-height: 120px;
+            }
+      - type: grid
+        title: Co můžeš dělat teď
+        columns: 5
+        square: false
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Pračka
+            secondary: |
+              {% if states('sensor.ems_surplus_power')|float(0) > 1000 %}
+                Klidně spusť
+              {% else %}
+                Radši počkej
+              {% endif %}
+            icon: mdi:washing-machine
+            badge_icon: |
+              {% if states('sensor.ems_surplus_power')|float(0) > 1000 %}
+                mdi:check
+              {% else %}
+                mdi:clock-outline
+              {% endif %}
+            badge_color: >
+              {% if states('sensor.ems_surplus_power')|float(0) > 1000 %} green
+              {% else %} amber {% endif %}
+          - type: custom:mushroom-template-card
+            primary: Myčka
+            secondary: |
+              {% if states('sensor.ems_surplus_power')|float(0) > 1000 %}
+                Klidně spusť
+              {% else %}
+                Radši počkej
+              {% endif %}
+            icon: mdi:dishwasher
+          - type: custom:mushroom-template-card
+            primary: Trouba
+            secondary: |
+              {% if states('sensor.ems_surplus_power')|float(0) > 2500 %}
+                Klidně použij
+              {% else %}
+                Teď ne ideál
+              {% endif %}
+            icon: mdi:stove
+          - type: custom:mushroom-template-card
+            primary: Klimatizace
+            secondary: |
+              {% if states('sensor.ems_surplus_power')|float(0) > 800 %}
+                Můžeš zapnout
+              {% else %}
+                Jen když musíš
+              {% endif %}
+            icon: mdi:air-conditioner
+          - type: custom:mushroom-template-card
+            primary: Nabíjení auta
+            secondary: >
+              {% if
+              is_state('binary_sensor.eaton_wallbox_cm4_1_wallbox_auto_pripojeno','on')
+              %}
+                Auto připojeno
+              {% else %}
+                Nepřipojeno
+              {% endif %}
+            icon: mdi:car-electric
+      - type: grid
+        title: Co se děje právě teď
+        columns: 4
+        square: false
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Soláry vyrábí
+            secondary: "{{ states('sensor.ems_vykon_solary') }} W"
+            icon: mdi:solar-power
+            icon_color: amber
+          - type: custom:mushroom-template-card
+            primary: Dům spotřebuje
+            secondary: >
+              {{ ((states('sensor.easun_l1_output_active_power')|float(0) +
+              states('sensor.easun_l2_output_active_power')|float(0) +
+              states('sensor.easun_l3_output_active_power')|float(0)) / 1000) |
+              round(1) }} kW
+            icon: mdi:home-lightning-bolt
+          - type: custom:mushroom-template-card
+            primary: Baterie domu
+            secondary: "{{ states('sensor.ems_soc_baterie') }} %"
+            icon: mdi:battery
+            icon_color: green
+          - type: custom:mushroom-template-card
+            primary: Přebytek
+            secondary: >
+              {{ (states('sensor.ems_surplus_power')|float(0) / 1000) | round(1)
+              }} kW
+            icon: mdi:transmission-tower-export
+            icon_color: green
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Spodní bojler
+            secondary: "{{ states('sensor.ems_bottom_boiler_bottom_temp') }} °C"
+            icon: mdi:water-boiler
+            icon_color: amber
+          - type: custom:mushroom-template-card
+            primary: Pergola bojler
+            secondary: "{{ states('sensor.ems_pergola_boiler_temp') }} °C"
+            icon: mdi:water-boiler
+            icon_color: green
+          - type: custom:mushroom-template-card
+            primary: Co EMS udělá
+            secondary: |
+              {% if is_state('binary_sensor.ems_cheap_grid_allowed_now','on') %}
+                Teď může využít levný proud.
+              {% elif states('sensor.ems_surplus_power')|float(0) > 1000 %}
+                Teď využívá přebytky ze slunce.
+              {% else %}
+                Teď drží dům v klidu.
+              {% endif %}
+            icon: mdi:robot
+  - type: vertical-stack
+    view_layout:
+      grid-column: 3
+    cards:
+      - type: custom:mushroom-template-card
+        primary: Není potřeba nic dělat.
+        secondary: EMS se o vše stará.
+        icon: mdi:check-bold
+        icon_color: green
+        card_mod:
+          style: |
+            ha-card {
+              border-radius: 18px;
+              background: #111c2b;
+            }
+      - type: vertical-stack
+        title: Auta
+        cards:
+          - type: custom:mushroom-template-card
+            primary: ID3
+            secondary: >
+              {{ states('sensor.tronity_id_3_level') }} % · chybí cca {{
+              states('sensor.ems_car_id3_required_energy') }} kWh
+            icon: mdi:car-electric
+            icon_color: blue
+          - type: custom:mushroom-template-card
+            primary: ID4
+            secondary: |
+              {{ states('sensor.tronity_id_4_level') }} %
+            icon: mdi:car-electric
+            icon_color: blue
+      - type: grid
+        title: Rychlé ovládání
+        columns: 2
+        square: false
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Dohřát spodní bojler
+            icon: mdi:water-boiler
+            tap_action:
+              action: call-service
+              service: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.ems_load_boiler_bottom_t1_enabled
+          - type: custom:mushroom-template-card
+            primary: Dohřát pergola bojler
+            icon: mdi:water-boiler
+            tap_action:
+              action: call-service
+              service: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.ems_load_boiler_pergola_t1_enabled
+          - type: custom:mushroom-template-card
+            primary: Dobít baterii na 100 %
+            icon: mdi:battery-charging-100
+            tap_action:
+              action: call-service
+              service: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.ems_force_battery_full_charge
+          - type: custom:mushroom-template-card
+            primary: Rychle dobít auto
+            icon: mdi:car-electric
+            tap_action:
+              action: call-service
+              service: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.ems_force_car_charge
