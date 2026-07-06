@@ -1,0 +1,30 @@
+{
+  "timestamp": "2026-07-05T12:15:00.000Z",
+  "event": {
+    "topic": "ems/boiler",
+    "type": "boiler",
+    "key": "boiler:bottom:t1_started:solar_surplus",
+    "importance": "normal",
+    "status": "RUNNING",
+    "status_display": "Spodní bojler ohřívá",
+    "reason": "solar_surplus",
+    "reason_display": "Dostatečný přebytek z FVE",
+    "notify": false,
+    "speak": false
+  },
+  "core": {
+    "ems_enabled": true,
+    "battery_soc": 86,
+    "target_soc": 80,
+    "pv_power": 7800,
+    "surplus_power": 2100,
+    "hdo_state": "VT"
+  },
+  "boiler": {
+    "bottom_t1": true,
+    "bottom_t2": false,
+    "pergola_t1": false,
+    "pergola_t2": false,
+    "reason_display": "Dostatečný přebytek z FVE"
+  }
+}
