@@ -1,0 +1,29 @@
+{
+  "timestamp": "2026-07-05T20:30:44.108Z",
+  "event": {
+    "topic": "ems/safety",
+    "type": "safety",
+    "key": "safety:manager_disabled_keep_current:emergency_disabled",
+    "importance": "normal",
+    "status": "OFF",
+    "status_display": "Ostrovní provoz",
+    "reason": "manager_disabled_keep_current",
+    "reason_display": "Správce vypnutý, drží aktuální stav",
+    "notify": false,
+    "speak": false
+  },
+  "core": {
+    "ems_enabled": false
+  },
+  "safety": {
+    "voltage": 52.55,
+    "ac_in_status": "OFF",
+    "ac_in_status_display": "Ostrovní provoz",
+    "ac_in_reason": "manager_disabled_keep_current",
+    "ac_in_reason_display": "Správce vypnutý, drží aktuální stav",
+    "emergency_status": "IDLE",
+    "emergency_status_display": "V klidu",
+    "emergency_reason": "emergency_disabled",
+    "emergency_reason_display": "Nouzové dobíjení vypnuto"
+  }
+}
