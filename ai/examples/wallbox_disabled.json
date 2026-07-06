@@ -1,0 +1,31 @@
+{
+  "timestamp": "2026-07-05T20:45:00.000Z",
+  "event": {
+    "topic": "ems/wallbox",
+    "type": "wallbox",
+    "key": "wallbox:disabled:no_car_connected",
+    "importance": "normal",
+    "status": "DISABLED",
+    "status_display": "Nabíjení vypnuto",
+    "reason": "no_car_connected",
+    "reason_display": "Není připojené žádné auto",
+    "notify": false,
+    "speak": false
+  },
+  "core": {
+    "ems_enabled": true,
+    "battery_soc": 72,
+    "pv_power": 4200,
+    "surplus_power": 1600,
+    "hdo_state": "VT"
+  },
+  "wallbox": {
+    "mode": "DISABLED",
+    "reason": "no_car_connected",
+    "reason_display": "Není připojené žádné auto",
+    "id3_connected": false,
+    "id4_connected": false,
+    "selected_car": null,
+    "current_a": 6
+  }
+}
