@@ -9,15 +9,19 @@ EMS není jen sada automatizací. Je to řídicí systém domu, který rozhoduje
 ```text
 homeassistant/
   ems_base.yaml      # Home Assistant helpers, senzory, šablony, skripty a dashboard základ EMS
+  ems_ai.yaml        # MQTT senzory pro lokální AI komentátor
 
 nodered/
   flows.json         # Node-RED flow s hlavní rozhodovací logikou EMS
+  ems_ai_commentator_flow.json
+                    # Samostatný importovatelný flow pro AI komentátor
 
 docs/
   architecture.md    # Architektura systému
   decision_logic.md  # Chování EMS a rozhodovací priority
   entities.md        # Důležité entity a význam
   todo.md            # Další plánované práce
+  EMS_AI_CODEX.md    # Zadání pro Codex / další dodělávky AI vrstvy
 ```
 
 ## Hlavní cíle EMS
@@ -30,6 +34,26 @@ docs/
 - Nepřetěžovat žádnou fázi, měnič ani vstup ze sítě.
 - Logovat a zobrazovat, proč EMS něco zapnulo nebo vypnulo.
 - Udržet systém čitelný, modulární a rozšiřitelný.
+
+## Lokální AI komentátor
+
+AI vrstva je pouze komentátor a analytik. Deterministické řízení zůstává v Node-RED. AI nikdy přímo neovládá relé, wallbox, bojler, AC-in ani nouzové dobíjení.
+
+Doporučený tok:
+
+```text
+Node-RED EMS event / global.ems
+        ↓
+kompaktní AI snapshot
+        ↓
+Ollama API v lokální síti
+        ↓
+MQTT ems/ai/comment + ems/ai/status
+        ↓
+Home Assistant dashboard / notifikace
+```
+
+První cílový model na slabším CPU je `gemma3:4b`, pro obecné hraní přes Open WebUI může běžet i `qwen2.5:7b`.
 
 ## Základní topologie
 
@@ -48,6 +72,7 @@ docs/
 - Entity ID mají být pokud možno anglicky a stabilní.
 - UI názvy mohou být česky.
 - Změny v rozhodování se mají dokumentovat v `docs/decision_logic.md`.
+- AI vrstva nesmí měnit bezpečnostní ani akční logiku bez explicitního lidského zásahu.
 - Citlivé soubory, tokeny, credentials a runtime databáze do repozitáře nepatří.
 
 ## Bezpečnostní poznámka
