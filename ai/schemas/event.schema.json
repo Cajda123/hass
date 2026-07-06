@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Cajda123/hass/ai/schemas/event.schema.json",
+  "title": "EMS AI Event",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["topic", "type"],
+  "properties": {
+    "topic": {
+      "type": "string",
+      "description": "Source MQTT topic or logical event source, for example ems/safety."
+    },
+    "type": {
+      "type": "string",
+      "description": "Logical event type: safety, wallbox, boiler, battery_grid, plan, appliance."
+    },
+    "key": {
+      "type": "string",
+      "description": "Stable deduplication key for anti-spam logic."
+    },
+    "importance": {
+      "type": "string",
+      "enum": ["debug", "normal", "important", "critical"],
+      "default": "normal"
+    },
+    "status": {
+      "type": "string"
+    },
+    "status_display": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "reason_display": {
+      "type": "string"
+    },
+    "notify": {
+      "type": "boolean",
+      "description": "Whether this event should be considered for mobile notification."
+    },
+    "speak": {
+      "type": "boolean",
+      "description": "Whether this event may be spoken by a future voice layer."
+    }
+  }
+}
