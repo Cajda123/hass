@@ -206,6 +206,10 @@ cards:
               border-radius: 18px;
               background: #111c2b;
             }
+      - type: markdown
+        title: 🧠 EMS AI komentář
+        content: >-
+          {{ states('sensor.ems_ai_komentar') }}
       - type: vertical-stack
         title: Auta
         cards:
