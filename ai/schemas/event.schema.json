@@ -4,7 +4,21 @@
   "title": "EMS AI Event",
   "type": "object",
   "additionalProperties": true,
-  "required": ["topic", "type"],
+  "required": [
+    "topic",
+    "type",
+    "key",
+    "importance",
+    "status_display",
+    "reason_display",
+    "human_hint",
+    "recommendation_hint",
+    "allowed_topics",
+    "forbidden_topics",
+    "notify",
+    "speak",
+    "silent"
+  ],
   "properties": {
     "topic": {
       "type": "string",
@@ -20,7 +34,12 @@
     },
     "importance": {
       "type": "string",
-      "enum": ["debug", "normal", "important", "critical"],
+      "enum": [
+        "debug",
+        "normal",
+        "important",
+        "critical"
+      ],
       "default": "normal"
     },
     "status": { "type": "string" },
@@ -57,6 +76,32 @@
     "speak": {
       "type": "boolean",
       "description": "Whether this event may be spoken by a future voice layer."
+    },
+    "human_hint": {
+      "type": "string",
+      "description": "Short Czech explanation of what happened; source text for AI, not a command."
+    },
+    "recommendation_hint": {
+      "type": "string",
+      "description": "Allowed Czech recommendation; AI must not recommend actions outside this hint."
+    },
+    "allowed_topics": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Topics the AI may mention for this event."
+    },
+    "forbidden_topics": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Topics the AI must not mention for this event."
+    },
+    "silent": {
+      "type": "boolean",
+      "description": "Whether the automatic commentator must ignore this event."
     }
   }
 }

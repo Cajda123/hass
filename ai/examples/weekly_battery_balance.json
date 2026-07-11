@@ -1,0 +1,41 @@
+{
+  "timestamp": "2026-07-06T03:00:00.000Z",
+  "event": {
+    "topic": "ems/tasks",
+    "type": "battery_balance",
+    "key": "battery_balance:RUNNING:weekly_battery_balance",
+    "importance": "important",
+    "status": "RUNNING",
+    "status_display": "Týdenní balancování baterie běží",
+    "reason": "weekly_battery_balance",
+    "reason_display": "Plánované týdenní balancování baterie",
+    "human_hint": "EMS provádí plánované týdenní balancování baterie.",
+    "recommendation_hint": "Není potřeba nic dělat; nechej údržbový cyklus doběhnout.",
+    "allowed_topics": [
+      "balancování baterie",
+      "údržbový důvod",
+      "doporučení z recommendation_hint"
+    ],
+    "forbidden_topics": [
+      "wallbox",
+      "bojler",
+      "AC-in"
+    ],
+    "notify": false,
+    "speak": false,
+    "silent": false
+  },
+  "core": {
+    "ems_enabled": true,
+    "battery_soc": 92,
+    "pv_power": 4200,
+    "surplus_power": 1600,
+    "hdo_state": "NT"
+  },
+  "battery_grid": {
+    "mode": "GRID_CHARGE",
+    "reason": "force_task_weekly_battery_balance",
+    "charge_enable": true,
+    "current_a": 10
+  }
+}

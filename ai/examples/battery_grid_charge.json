@@ -10,7 +10,19 @@
     "reason": "cheap_tariff_low_soc",
     "reason_display": "Levný tarif a SOC pod cílem",
     "notify": false,
-    "speak": false
+    "speak": false,
+    "human_hint": "Baterie se dobíjí ze sítě: Levný tarif a SOC pod cílem",
+    "recommendation_hint": "Pouze stručně vysvětli stav. Nenavrhuj žádné přímé ovládání zařízení.",
+    "allowed_topics": [
+      "battery_grid",
+      "aktuální rozhodnutí EMS",
+      "doporučení z recommendation_hint"
+    ],
+    "forbidden_topics": [
+      "přímé ovládání zařízení",
+      "nesouvisející EMS managery"
+    ],
+    "silent": false
   },
   "core": {
     "ems_enabled": true,
