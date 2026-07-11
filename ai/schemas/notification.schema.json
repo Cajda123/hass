@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Cajda123/hass/ai/schemas/notification.schema.json",
+  "title": "EMS Notification Routing",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "kind",
+    "audience",
+    "urgency",
+    "requires_response"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": ["info", "advice", "question", "warning", "error", "critical"]
+    },
+    "audience": {
+      "type": "string",
+      "enum": ["none", "actor", "actor_or_home", "home", "both", "explicit"]
+    },
+    "urgency": {
+      "type": "string",
+      "enum": ["silent", "normal", "immediate", "persistent"]
+    },
+    "requires_response": {
+      "type": "boolean"
+    },
+    "question_id": {
+      "type": ["string", "null"],
+      "description": "Unique id shared by actionable notifications and their response."
+    },
+    "action_id": {
+      "type": ["string", "null"],
+      "description": "Approved deterministic action offered to the user."
+    },
+    "expires_in_s": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "fallback_after_s": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Optional delay before routing an unanswered question to another eligible person."
+    },
+    "explicit_person_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "collapse_key": {
+      "type": ["string", "null"],
+      "description": "Stable mobile notification tag so updates replace the old card."
+    },
+    "repeat_while_active": {
+      "type": "boolean",
+      "default": false
+    },
+    "repeat_interval_s": {
+      "type": "integer",
+      "minimum": 60
+    },
+    "clear_when_resolved": {
+      "type": "boolean",
+      "default": true
+    },
+    "presence_required": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "kind": { "const": "question" } }
+      },
+      "then": {
+        "required": ["question_id", "action_id", "expires_in_s"],
+        "properties": { "requires_response": { "const": true } }
+      }
+    },
+    {
+      "if": {
+        "properties": { "audience": { "const": "explicit" } }
+      },
+      "then": {
+        "required": ["explicit_person_ids"]
+      }
+    }
+  ]
+}
