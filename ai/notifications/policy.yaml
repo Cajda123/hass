@@ -1,0 +1,90 @@
+# Deterministická pravidla směrování EMS notifikací
+#
+# AI pouze vytvoří lidský text. Příjemce, prioritu, expiraci a provedení akce
+# vždy určuje Node-RED podle tohoto policy souboru a přítomnosti v Home Assistantu.
+
+people:
+  david:
+    person_entity: person.david
+    notify_service: notify.mobile_app_david
+  partner:
+    person_entity: person.partner
+    notify_service: notify.mobile_app_partner
+
+routing:
+  errors:
+    kinds:
+      - error
+      - critical
+    audience: both
+    presence_required: false
+    urgency: immediate
+    repeat_while_active: true
+    repeat_interval_s: 900
+    clear_when_resolved: true
+    rule: "Chyby a kritické stavy poslat vždy oběma mobilům bez ohledu na přítomnost."
+
+  warnings:
+    kinds:
+      - warning
+    audience: actor_or_home
+    presence_required: false
+    urgency: normal
+    repeat_while_active: false
+    clear_when_resolved: true
+    rule: "Varování poslat původci; pokud není známý, lidem doma. Pokud nikdo není doma, oběma jen když je událost important nebo critical."
+
+  questions:
+    kinds:
+      - question
+    audience: actor_or_home
+    presence_required: true
+    urgency: immediate
+    requires_response: true
+    fallback_after_s: 90
+    default_expires_in_s: 300
+    clear_when_resolved: true
+    rule: >-
+      Dotaz poslat nejdřív člověku, který akci způsobil. Když původce není známý
+      nebo není dostupný, poslat člověku doma. Když jsou doma oba a původce není
+      známý, poslat oběma; první odpověď dotaz uzavře a notifikace se druhému stáhne.
+
+  advice:
+    kinds:
+      - advice
+      - info
+    audience: home
+    presence_required: true
+    urgency: normal
+    repeat_while_active: false
+    clear_when_resolved: false
+    rule: "Běžné rady poslat pouze lidem doma; nikomu mimo domov je neposílat."
+
+resolution:
+  first_answer_wins: true
+  store_answered_by: true
+  publish_response_topic: ems/ai/response
+  publish_state_topic: ems/ai/question_state
+  states:
+    - open
+    - answered
+    - expired
+    - cancelled
+  clear_other_notifications_on_answer: true
+
+mobile_actions:
+  yes:
+    label: "Ano"
+    value: "yes"
+  no:
+    label: "Ne"
+    value: "no"
+  later:
+    label: "Teď ne"
+    value: "later"
+
+safety:
+  - "AI nikdy sama nevybírá příjemce."
+  - "AI nikdy sama nevolá Home Assistant služby ani skripty."
+  - "Každá akce z dotazu musí být předem povolená v event.action_offers."
+  - "Odpověď ano provede pouze Node-RED po kontrole, že dotaz není expirovaný a valid_when stále platí."
