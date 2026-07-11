@@ -12,11 +12,11 @@ house:
 
   phases:
     L1:
-      note: "Jedna z fází pro vaření."
+      note: "Myčka a jedna polovina varné desky."
     L2:
-      note: "Druhá fáze pro vaření."
+      note: "Pergolový bojler a druhá polovina varné desky."
     L3:
-      note: "Společná fáze pro spodní bojler a troubu."
+      note: "Spodní bojler, trouba a pračka."
 
   appliances:
     bottom_boiler:
@@ -25,7 +25,14 @@ house:
       type: "controlled_load"
       can_be_paused: true
       pause_script: "script.ems_pause_bottom_boiler_for_oven"
-      note: "Když běží spodní bojler a má se péct v troubě, nabídnout dočasné vypnutí bojleru."
+      note: "Sdílí L3 s troubou a pračkou. Při pečení nabídnout dočasné vypnutí bojleru."
+
+    pergola_boiler:
+      label: "bojler na pergole"
+      phase: "L2"
+      type: "controlled_load"
+      can_be_paused: true
+      note: "Sdílí L2 s jednou polovinou varné desky."
 
     oven:
       label: "trouba"
@@ -40,34 +47,59 @@ house:
       phases:
         - "L1"
         - "L2"
+      phase_distribution:
+        L1: "jedna polovina desky"
+        L2: "druhá polovina desky"
       type: "manual_load"
-      note: "Vaření je na zbylých dvou fázích, takže nekoliduje přímo se spodním bojlerem na L3."
+      conflicts_with:
+        - "dishwasher"
+        - "pergola_boiler"
+      note: "Deska je rozdělená napůl mezi L1 a L2. Zátěž závisí na tom, která polovina a kolik plotýnek právě běží."
 
     washing_machine:
       label: "pračka"
+      phase: "L3"
       type: "manual_load"
+      conflicts_with:
+        - "bottom_boiler"
+        - "oven"
       preferred_when:
         - "battery_above_target"
         - "solar_surplus_available"
-      note: "Když je baterie nad cílem a EMS už posílá přebytek do bojleru, je dobrá chvíle pustit pračku."
+      note: "Pračka je na L3. Když běží spodní bojler nebo trouba, poradce má upozornit na souběh na stejné fázi."
 
     dishwasher:
       label: "myčka"
+      phase: "L1"
       type: "manual_load"
+      conflicts_with:
+        - "hob_l1_half"
       preferred_when:
         - "battery_above_target"
         - "solar_surplus_available"
-      note: "Když je baterie nad cílem a EMS už posílá přebytek do bojleru, je dobrá chvíle pustit myčku."
+      note: "Myčka je na L1. Při silném vaření na L1 polovině desky upozornit na souběh."
 
   advice_rules:
     - id: "surplus_household_loads_ok"
-      when: "battery_soc >= target_soc and boiler_running_from_surplus"
-      say: "Je dobrá chvíle pustit běžné zátěže jako pračku nebo myčku."
+      when: "battery_soc >= target_soc and solar_surplus_available"
+      say: "Je dobrá chvíle pustit běžné domácí zátěže, ale zohledni jejich fázi a právě běžící spotřebiče."
 
     - id: "oven_conflicts_with_bottom_boiler"
       when: "bottom_boiler_on and user_may_want_oven"
-      say: "Trouba je na stejné fázi jako spodní bojler. Nabídni dočasné vypnutí bojleru, ale nic nevypínej bez potvrzení."
+      say: "Trouba je na stejné fázi L3 jako spodní bojler. Nabídni dočasné vypnutí bojleru, ale nic nevypínej bez potvrzení."
 
-    - id: "hob_ok_when_bottom_boiler_on"
-      when: "bottom_boiler_on"
-      say: "Vaření je na L1+L2, takže nekoliduje přímo se spodním bojlerem na L3."
+    - id: "washing_machine_conflicts_with_bottom_boiler"
+      when: "bottom_boiler_on and user_may_want_washing_machine"
+      say: "Pračka je také na L3. Upozorni na souběh se spodním bojlerem; automaticky nic nevypínej."
+
+    - id: "dishwasher_conflicts_with_hob_l1"
+      when: "dishwasher_on and hob_l1_half_heavily_loaded"
+      say: "Myčka i jedna polovina varné desky jsou na L1. Při větším vaření na této polovině upozorni na souběh."
+
+    - id: "pergola_boiler_conflicts_with_hob_l2"
+      when: "pergola_boiler_on and hob_l2_half_heavily_loaded"
+      say: "Bojler na pergole a druhá polovina varné desky jsou na L2. Při větším vaření na této polovině upozorni na souběh."
+
+    - id: "hob_is_split_between_l1_l2"
+      when: "user_may_want_hob"
+      say: "Varná deska není jedna společná zátěž: jedna polovina je na L1 a druhá na L2. Radu odvozuj podle zatížení konkrétní fáze, ne pouze podle toho, že je deska zapnutá."
