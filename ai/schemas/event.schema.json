@@ -51,11 +51,25 @@
     },
     "family_hint": {
       "type": "string",
-      "description": "Optional household-facing hint, for example which appliances are OK to run now. Intended for family dashboard/advisor mode."
+      "description": "Optional household-facing hint, for example which appliances are OK to run now."
     },
     "question_hint": {
       "type": "string",
       "description": "Optional question or offer to the user. It must be non-binding and require confirmation before any action."
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "person_id": { "type": ["string", "null"] },
+        "source": {
+          "type": "string",
+          "enum": ["mobile", "voice", "dashboard", "automation", "physical", "unknown"]
+        },
+        "device_id": { "type": ["string", "null"] },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "description": "Best known originator of the action or request. Used only by deterministic notification routing."
     },
     "action_offers": {
       "type": "array",
@@ -70,9 +84,14 @@
           "description": { "type": "string" },
           "script": { "type": "string" },
           "requires_confirmation": { "type": "boolean", "const": true },
-          "valid_when": { "type": "string" }
+          "valid_when": { "type": "string" },
+          "expires_in_s": { "type": "integer", "minimum": 1 }
         }
       }
+    },
+    "notification": {
+      "$ref": "notification.schema.json",
+      "description": "Deterministic mobile notification routing metadata. AI must not decide recipients or execute actions."
     },
     "allowed_topics": {
       "type": "array",
