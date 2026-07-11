@@ -1,0 +1,46 @@
+{
+  "timestamp": "2026-07-11T12:45:44.058Z",
+  "mode": "family_advisor",
+  "event": {
+    "topic": "ems/family_advice",
+    "type": "family_advice",
+    "key": "family:surplus:bottom_boiler_on:oven_offer",
+    "importance": "normal",
+    "status": "SURPLUS_LOADS_OK",
+    "status_display": "Je vhodná chvíle pro běžné spotřebiče",
+    "reason": "battery_above_target_and_bottom_boiler_running",
+    "reason_display": "Baterie je nad cílem a přebytek se ukládá do spodního bojleru",
+    "human_hint": "Baterie je nabitá nad cílovou hodnotu a EMS už posílá přebytek do spodního bojleru.",
+    "recommendation_hint": "Pračku nebo myčku lze teď klidně pustit. Vaření je v pohodě. U trouby upozorni na společnou fázi se spodním bojlerem.",
+    "family_hint": "Pračku nebo myčku klidně pusť. Vaření je na jiných fázích než spodní bojler. Trouba sdílí L3 se spodním bojlerem.",
+    "question_hint": "Jestli chceš péct, můžu na dobu pečení vypnout spodní bojler.",
+    "action_offers": [
+      {
+        "id": "pause_bottom_boiler_for_oven",
+        "title": "Vypnout spodní bojler na dobu pečení",
+        "description": "Dočasně odlehčí L3, protože trouba je na stejné fázi jako spodní bojler.",
+        "script": "script.ems_pause_bottom_boiler_for_oven",
+        "requires_confirmation": true,
+        "valid_when": "bottom_boiler_on && oven_expected"
+      }
+    ],
+    "allowed_topics": ["battery", "solar_surplus", "washing_machine", "dishwasher", "hob", "oven", "bottom_boiler", "phase_l3", "action_offer"],
+    "forbidden_topics": ["weekly_balance", "emergency_charge", "debug", "json", "manual_request"],
+    "notify": false,
+    "speak": false,
+    "silent": false
+  },
+  "context": {
+    "battery_soc": 77,
+    "target_soc": 50,
+    "tariff": "expensive",
+    "hdo": "VT",
+    "bottom_boiler_on": true,
+    "bottom_boiler_phase": "L3",
+    "oven_phase": "L3",
+    "hob_phases": ["L1", "L2"],
+    "wallbox_active": false,
+    "cars_need_energy": false
+  },
+  "house_knowledge_ref": "ai/house/knowledge.yaml"
+}
