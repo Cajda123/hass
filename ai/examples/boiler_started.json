@@ -10,7 +10,19 @@
     "reason": "solar_surplus",
     "reason_display": "Dostatečný přebytek z FVE",
     "notify": false,
-    "speak": false
+    "speak": false,
+    "human_hint": "Spodní bojler ohřívá: Dostatečný přebytek z FVE",
+    "recommendation_hint": "Pouze stručně vysvětli stav. Nenavrhuj žádné přímé ovládání zařízení.",
+    "allowed_topics": [
+      "boiler",
+      "aktuální rozhodnutí EMS",
+      "doporučení z recommendation_hint"
+    ],
+    "forbidden_topics": [
+      "přímé ovládání zařízení",
+      "nesouvisející EMS managery"
+    ],
+    "silent": false
   },
   "core": {
     "ems_enabled": true,

@@ -1,0 +1,45 @@
+{
+  "timestamp": "2026-07-05T12:30:00.000Z",
+  "event": {
+    "topic": "ems/wallbox",
+    "type": "wallbox",
+    "key": "wallbox:DISABLED:no_connected_car_needs_energy:id3_off:id4_off",
+    "importance": "normal",
+    "status": "DISABLED",
+    "status_display": "Nabíjení vypnuto",
+    "reason": "no_connected_car_needs_energy",
+    "reason_display": "Žádné připojené auto teď nepotřebuje energii",
+    "human_hint": "Wallbox je vypnutý, protože žádné připojené auto teď nepotřebuje energii.",
+    "recommendation_hint": "Není potřeba nic dělat.",
+    "allowed_topics": [
+      "wallbox",
+      "důvod vypnutí",
+      "doporučení z recommendation_hint"
+    ],
+    "forbidden_topics": [
+      "bojler",
+      "battery grid manager",
+      "AC-in",
+      "nouzové dobíjení"
+    ],
+    "notify": false,
+    "speak": false,
+    "silent": false
+  },
+  "core": {
+    "ems_enabled": true,
+    "battery_soc": 72,
+    "pv_power": 4200,
+    "surplus_power": 1600,
+    "hdo_state": "VT"
+  },
+  "wallbox": {
+    "mode": "DISABLED",
+    "reason": "no_connected_car_needs_energy",
+    "reason_display": "Žádné připojené auto teď nepotřebuje energii",
+    "id3_connected": false,
+    "id4_connected": false,
+    "selected_car": null,
+    "current_a": 6
+  }
+}

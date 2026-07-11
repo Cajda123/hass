@@ -365,3 +365,17 @@ Override může přebít plánovací logiku, například prioritu auta nebo ohř
 - bezpečnostní vypnutí všech zátěží.
 
 Výjimka musí být explicitní servisní režim a musí být jasně vidět v UI.
+
+## EMS AI komentátor
+
+Node-RED managery po výpočtu deterministické akce ukládají také standardizovaný `ems.ai_event` podle schématu `ai/schemas/event.schema.json`. Event je pouze popis hotového rozhodnutí; AI vrstva nesmí volat Home Assistant služby ani měnit stav zařízení.
+
+AI flow v Node-RED používá poslední `ems.ai_event`, deduplikuje podle `event.key`, po startu/redeployi ignoruje automatické komentáře 90 sekund a mezi automatickými komentáři drží 120 sekund cooldown. Ruční inject cooldown obchází. Flow sestaví compact snapshot, zavolá lokální Ollamu a publikuje:
+
+- `ems/ai/comment` – text komentáře pro Home Assistant,
+- `ems/ai/status` – JSON metadata včetně modelu, délky běhu a event key,
+- `ems/ai/error` – chyba nebo prázdná odpověď.
+
+AI komentář je informativní vrstva. Bezpečnostní priority, vypínání/zapínání wallboxů, bojlerů, AC-in a dobíjení baterie zůstávají výhradně v deterministických Node-RED managerech.
+
+Event nesmí míchat rozhodnutí více managerů. `wallbox` event popisuje pouze wallbox, `boiler` pouze bojler, `battery_grid` pouze dobíjení baterie ze sítě, `safety` pouze AC-in / emergency safety a `battery_balance` pouze údržbový úkol baterie. Povinné hinty `human_hint`, `recommendation_hint`, `allowed_topics` a `forbidden_topics` omezují, co smí AI komentovat.

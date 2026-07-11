@@ -10,7 +10,19 @@
     "reason": "no_car_connected",
     "reason_display": "Není připojené žádné auto",
     "notify": false,
-    "speak": false
+    "speak": false,
+    "human_hint": "Nabíjení vypnuto: Není připojené žádné auto",
+    "recommendation_hint": "Pouze stručně vysvětli stav. Nenavrhuj žádné přímé ovládání zařízení.",
+    "allowed_topics": [
+      "wallbox",
+      "aktuální rozhodnutí EMS",
+      "doporučení z recommendation_hint"
+    ],
+    "forbidden_topics": [
+      "přímé ovládání zařízení",
+      "nesouvisející EMS managery"
+    ],
+    "silent": false
   },
   "core": {
     "ems_enabled": true,

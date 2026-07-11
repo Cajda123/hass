@@ -1,0 +1,44 @@
+{
+  "timestamp": "2026-07-05T13:00:00.000Z",
+  "event": {
+    "topic": "ems/boiler",
+    "type": "boiler",
+    "key": "boiler:IDLE:nothing_useful_to_heat:off",
+    "importance": "normal",
+    "status": "IDLE",
+    "status_display": "Bojler stojí",
+    "reason": "nothing_useful_to_heat",
+    "reason_display": "Není potřeba užitečně ohřívat",
+    "human_hint": "Bojler je vypnutý, protože EMS nenašlo vhodný důvod k ohřevu.",
+    "recommendation_hint": "Není potřeba nic dělat.",
+    "allowed_topics": [
+      "bojler",
+      "důvod vypnutí",
+      "doporučení z recommendation_hint"
+    ],
+    "forbidden_topics": [
+      "wallbox",
+      "battery grid manager",
+      "AC-in"
+    ],
+    "notify": false,
+    "speak": false,
+    "silent": false
+  },
+  "core": {
+    "ems_enabled": true,
+    "battery_soc": 72,
+    "pv_power": 4200,
+    "surplus_power": 1600,
+    "hdo_state": "VT"
+  },
+  "boiler": {
+    "mode": "IDLE",
+    "reason": "nothing_useful_to_heat",
+    "reason_display": "Není potřeba užitečně ohřívat",
+    "bottom_t1": false,
+    "bottom_t2": false,
+    "pergola_t1": false,
+    "pergola_t2": false
+  }
+}

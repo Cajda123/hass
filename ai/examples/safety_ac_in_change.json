@@ -1,0 +1,42 @@
+{
+  "timestamp": "2026-07-05T20:30:44.108Z",
+  "event": {
+    "topic": "ems/safety",
+    "type": "safety",
+    "key": "safety:ac_in:ON:battery_voltage_below_connect_threshold",
+    "importance": "important",
+    "status": "ON",
+    "status_display": "Síť připojena",
+    "reason": "battery_voltage_below_connect_threshold",
+    "reason_display": "Napětí baterie kleslo pod práh pro připojení sítě",
+    "human_hint": "Safety manager změnil AC-in podle napětí baterie.",
+    "recommendation_hint": "Pouze informuj o bezpečnostním stavu; nedoporučuj ruční zásah.",
+    "allowed_topics": [
+      "AC-in",
+      "bezpečnostní důvod",
+      "doporučení z recommendation_hint"
+    ],
+    "forbidden_topics": [
+      "wallbox",
+      "bojler",
+      "battery grid plánování"
+    ],
+    "notify": true,
+    "speak": false,
+    "silent": false
+  },
+  "core": {
+    "ems_enabled": true,
+    "battery_soc": 38,
+    "pv_power": 4200,
+    "surplus_power": 1600,
+    "hdo_state": "VT"
+  },
+  "safety": {
+    "voltage": 49.8,
+    "ac_in_status": "ON",
+    "ac_in_status_display": "Síť připojena",
+    "ac_in_reason": "battery_voltage_below_connect_threshold",
+    "ac_in_reason_display": "Napětí baterie kleslo pod práh pro připojení sítě"
+  }
+}

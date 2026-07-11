@@ -10,7 +10,19 @@
     "reason": "manager_disabled_keep_current",
     "reason_display": "Správce vypnutý, drží aktuální stav",
     "notify": false,
-    "speak": false
+    "speak": false,
+    "human_hint": "Ostrovní provoz: Správce vypnutý, drží aktuální stav",
+    "recommendation_hint": "Pouze stručně vysvětli stav. Nenavrhuj žádné přímé ovládání zařízení.",
+    "allowed_topics": [
+      "safety",
+      "aktuální rozhodnutí EMS",
+      "doporučení z recommendation_hint"
+    ],
+    "forbidden_topics": [
+      "přímé ovládání zařízení",
+      "nesouvisející EMS managery"
+    ],
+    "silent": false
   },
   "core": {
     "ems_enabled": false

@@ -1,0 +1,42 @@
+{
+  "timestamp": "2026-07-05T06:30:00.000Z",
+  "event": {
+    "topic": "ems/battery_grid",
+    "type": "battery_grid",
+    "key": "battery_grid:IDLE:battery_target_already_reached:off",
+    "importance": "normal",
+    "status": "IDLE",
+    "status_display": "Dobíjení baterie ze sítě vypnuto",
+    "reason": "battery_target_already_reached",
+    "reason_display": "Cíl baterie je dosažen",
+    "human_hint": "Battery grid manager nedobíjí ze sítě, protože baterie dosáhla cíle.",
+    "recommendation_hint": "Není potřeba nic dělat; ponech nastavení EMS beze změny.",
+    "allowed_topics": [
+      "battery grid manager",
+      "důvod vypnutí",
+      "doporučení z recommendation_hint"
+    ],
+    "forbidden_topics": [
+      "wallbox",
+      "bojler",
+      "AC-in"
+    ],
+    "notify": false,
+    "speak": false,
+    "silent": false
+  },
+  "core": {
+    "ems_enabled": true,
+    "battery_soc": 82,
+    "pv_power": 4200,
+    "surplus_power": 1600,
+    "hdo_state": "VT",
+    "target_soc": 80
+  },
+  "battery_grid": {
+    "mode": "IDLE",
+    "reason": "battery_target_already_reached",
+    "charge_enable": false,
+    "current_a": 0
+  }
+}

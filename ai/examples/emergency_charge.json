@@ -1,0 +1,42 @@
+{
+  "timestamp": "2026-07-05T21:00:00.000Z",
+  "event": {
+    "topic": "ems/safety",
+    "type": "safety",
+    "key": "safety:emergency:ACTIVE:battery_voltage_critical",
+    "importance": "critical",
+    "status": "ACTIVE",
+    "status_display": "Nouzové dobíjení",
+    "reason": "battery_voltage_critical",
+    "reason_display": "Kriticky nízké napětí baterie",
+    "human_hint": "Nouzové dobíjení je aktivní kvůli kriticky nízkému napětí baterie.",
+    "recommendation_hint": "Pouze stručně upozorni na kritický stav; nedávej servisní návody.",
+    "allowed_topics": [
+      "nouzové dobíjení",
+      "bezpečnostní důvod",
+      "doporučení z recommendation_hint"
+    ],
+    "forbidden_topics": [
+      "wallbox",
+      "bojler",
+      "běžné plánování spotřebičů"
+    ],
+    "notify": true,
+    "speak": false,
+    "silent": false
+  },
+  "core": {
+    "ems_enabled": true,
+    "battery_soc": 30,
+    "pv_power": 4200,
+    "surplus_power": 1600,
+    "hdo_state": "VT"
+  },
+  "safety": {
+    "voltage": 47.5,
+    "emergency_status": "ACTIVE",
+    "emergency_status_display": "Nouzové dobíjení",
+    "emergency_reason": "battery_voltage_critical",
+    "emergency_reason_display": "Kriticky nízké napětí baterie"
+  }
+}
