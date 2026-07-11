@@ -5,6 +5,7 @@
 #   ems/ai/comment  -> plain text comment
 #   ems/ai/status   -> JSON metadata
 #   ems/ai/error    -> plain text or JSON error
+#   ems/ai/notify   -> JSON request routed through existing notification scripts
 ###############################################################################
 
 mqtt:
@@ -29,6 +30,109 @@ mqtt:
       object_id: ems_ai_last_error
       state_topic: "ems/ai/error"
       icon: mdi:robot-confused
+
+# Node-RED pošle například:
+# {
+#   "title": "EMS",
+#   "message": "Baterie se dobíjí v nízkém tarifu.",
+#   "target": "actor_or_home",
+#   "actor": "david",
+#   "channel": "general",
+#   "importance": "high",
+#   "ttl": 0
+# }
+automation:
+  - id: ems_ai_notification_router
+    alias: EMS AI - směrování notifikací
+    mode: queued
+    max: 20
+    trigger:
+      - platform: mqtt
+        topic: ems/ai/notify
+    variables:
+      data: "{{ trigger.payload_json }}"
+      title: "{{ data.title | default('EMS') }}"
+      message: "{{ data.message | default('') }}"
+      target: "{{ data.target | default('actor_or_home') }}"
+      actor: "{{ data.actor | default('') }}"
+      channel: "{{ data.channel | default('general') }}"
+      importance: "{{ data.importance | default('high') }}"
+      ttl: "{{ data.ttl | default(0) | int(0) }}"
+      david_home: "{{ is_state('person.david', 'home') }}"
+      gabca_home: "{{ is_state('person.gabca', 'home') }}"
+    condition:
+      - condition: template
+        value_template: "{{ message | trim | length > 0 }}"
+    action:
+      - choose:
+          - conditions: "{{ target == 'david' or (target == 'actor_or_home' and actor == 'david') }}"
+            sequence:
+              - action: script.notifikace_jen_david
+                data:
+                  title: "{{ title }}"
+                  message: "{{ message }}"
+                  channel: "{{ channel }}"
+                  importance: "{{ importance }}"
+                  ttl: "{{ ttl }}"
+
+          - conditions: "{{ target == 'gabca' or (target == 'actor_or_home' and actor == 'gabca') }}"
+            sequence:
+              - action: script.notifikace_jen_gabca
+                data:
+                  title: "{{ title }}"
+                  message: "{{ message }}"
+                  channel: "{{ channel }}"
+                  importance: "{{ importance }}"
+                  ttl: "{{ ttl }}"
+
+          - conditions: "{{ target == 'all' }}"
+            sequence:
+              - action: script.notifikace_pro_vsechny_telefony
+                data:
+                  title: "{{ title }}"
+                  message: "{{ message }}"
+                  channel: "{{ channel }}"
+                  importance: "{{ importance }}"
+                  ttl: "{{ ttl }}"
+
+          - conditions: "{{ target in ['home', 'actor_or_home'] and david_home and gabca_home }}"
+            sequence:
+              - action: script.notifikace_pro_vsechny_telefony
+                data:
+                  title: "{{ title }}"
+                  message: "{{ message }}"
+                  channel: "{{ channel }}"
+                  importance: "{{ importance }}"
+                  ttl: "{{ ttl }}"
+
+          - conditions: "{{ target in ['home', 'actor_or_home'] and david_home }}"
+            sequence:
+              - action: script.notifikace_jen_david
+                data:
+                  title: "{{ title }}"
+                  message: "{{ message }}"
+                  channel: "{{ channel }}"
+                  importance: "{{ importance }}"
+                  ttl: "{{ ttl }}"
+
+          - conditions: "{{ target in ['home', 'actor_or_home'] and gabca_home }}"
+            sequence:
+              - action: script.notifikace_jen_gabca
+                data:
+                  title: "{{ title }}"
+                  message: "{{ message }}"
+                  channel: "{{ channel }}"
+                  importance: "{{ importance }}"
+                  ttl: "{{ ttl }}"
+
+        default:
+          - action: script.notifikace_pro_vsechny_telefony
+            data:
+              title: "{{ title }}"
+              message: "{{ message }}"
+              channel: "{{ channel }}"
+              importance: "{{ importance }}"
+              ttl: "{{ ttl }}"
 
 # Lovelace mini card example:
 # type: markdown
