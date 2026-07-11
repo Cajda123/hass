@@ -1,0 +1,65 @@
+{
+  "timestamp": "2026-07-11T12:45:44.058Z",
+  "event": {
+    "topic": "ems/family_advice",
+    "type": "family_advice",
+    "key": "family:oven:pause_bottom_boiler",
+    "importance": "normal",
+    "status": "OFFER",
+    "status_display": "Nabídka uvolnění L3 pro troubu",
+    "reason": "bottom_boiler_on_same_phase_as_oven",
+    "reason_display": "Spodní bojler a trouba sdílejí fázi L3",
+    "human_hint": "Spodní bojler právě topí z přebytku a trouba je na stejné fázi L3.",
+    "recommendation_hint": "Pokud chceš péct, nabídni dočasné vypnutí spodního bojleru.",
+    "family_hint": "Pračku na L3 teď raději nepouštěj zároveň se spodním bojlerem. Myčka na L1 je v pořádku.",
+    "question_hint": "Jestli chceš péct, mám na tu dobu vypnout spodní bojler?",
+    "actor": {
+      "person_id": null,
+      "source": "unknown",
+      "device_id": null,
+      "confidence": 0
+    },
+    "action_offers": [
+      {
+        "id": "pause_bottom_boiler_for_oven",
+        "title": "Vypnout spodní bojler na dobu pečení",
+        "description": "Dočasně uvolní fázi L3 pro troubu.",
+        "script": "script.ems_pause_bottom_boiler_for_oven",
+        "requires_confirmation": true,
+        "valid_when": "bottom_boiler_on and oven_request_relevant",
+        "expires_in_s": 300
+      }
+    ],
+    "notification": {
+      "kind": "question",
+      "audience": "actor_or_home",
+      "urgency": "immediate",
+      "requires_response": true,
+      "question_id": "oven-bottom-boiler-1783773944058",
+      "action_id": "pause_bottom_boiler_for_oven",
+      "expires_in_s": 300,
+      "fallback_after_s": 90,
+      "collapse_key": "ems-question-oven-bottom-boiler",
+      "repeat_while_active": false,
+      "clear_when_resolved": true,
+      "presence_required": true
+    },
+    "allowed_topics": ["battery", "surplus", "bottom_boiler", "oven", "washing_machine", "dishwasher", "phase_l3"],
+    "forbidden_topics": ["weekly_balance", "emergency_charge", "wallbox"],
+    "notify": true,
+    "speak": false,
+    "silent": false
+  },
+  "context": {
+    "battery_soc": 77,
+    "target_soc": 50,
+    "bottom_boiler_on": true,
+    "pergola_boiler_on": false,
+    "phase_loads_w": {
+      "L1": 450,
+      "L2": 380,
+      "L3": 2450
+    },
+    "people_home": ["partner"]
+  }
+}
