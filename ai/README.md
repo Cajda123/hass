@@ -60,10 +60,17 @@ Skripty patří do repozitáře, ne do Home Assistant konfigurace:
 Aktuální produkční runtime je pořád:
 
 ```text
-nodered/flows.json  → Node-RED AI flow
+nodered/ems_ai_commentator_flow.json → samostatně importovatelný Node-RED AI flow
 homeassistant/ems_ai.yaml → MQTT senzory
 homeassistant/dashboard_family.yaml → karta s komentářem
 ```
+
+
+### Merge-friendly poznámka
+
+Kvůli častým konfliktům v jednořádkovém exportu `nodered/flows.json` je AI komentátor uložený také jako samostatný importovatelný flow `nodered/ems_ai_commentator_flow.json`. Tento soubor jde importovat v Node-RED přes **Import → Clipboard/File** bez přepisování hlavního EMS flow.
+
+Produkční managery musí při integraci stále nastavovat `global.ems.ai_event` podle `ai/schemas/event.schema.json`; standalone AI tab tento event čte z globálního `ems` objektu a ruční inject funguje i bez manager eventu.
 
 ### Jak použít JS SDK
 
@@ -108,7 +115,7 @@ Výstup je Markdown tabulka s průměrným/min/max časem a krátkou ukázkou od
 
 ## Node-RED runtime kontrola
 
-Tab `EMS 90 AI komentátor` v `nodered/flows.json` čte poslední standardizovaný `ems.ai_event`, aplikuje 90s start guard, deduplikaci podle `event.key`, 120s cooldown a ignoruje automatické eventy se `silent: true`.
+Importovatelný tab `EMS 90 AI komentátor` v `nodered/ems_ai_commentator_flow.json` čte poslední standardizovaný `ems.ai_event`, aplikuje 90s start guard, deduplikaci podle `event.key`, 120s cooldown a ignoruje automatické eventy se `silent: true`.
 
 Každý komentovatelný event musí obsahovat minimálně:
 
