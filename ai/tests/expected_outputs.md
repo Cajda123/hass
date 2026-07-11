@@ -1,33 +1,79 @@
-# EMS AI expected outputs
+# Očekávané výstupy EMS AI
 
-Tyto příklady slouží pro ruční kontrolu modelu při benchmarku.
+Tyhle příklady slouží pro ruční benchmark modelů a kontrolu promptu.
 
-## Wallbox stop
+## `safety_event.json`
 
-Vstup: `ai/examples/wallbox_stop.json`
+### Dobrý výstup
 
-Očekávaný styl: krátce vysvětlit, že nabíjení je vypnuté nebo zastavené podle `reason_display`; nedoporučovat ruční zapnutí mimo `recommendation_hint`.
+```text
+AC-in manager je vypnutý a dům zůstává v ostrovním provozu. Není potřeba žádný zásah.
+```
 
-## Boiler start/stop
+### Špatný výstup
 
-Vstupy: `ai/examples/boiler_started.json`, `ai/examples/boiler_stop.json`
+```text
+Doporučuji zapnout týdenní balanc a sledovat deficit energie.
+```
 
-Očekávaný styl: popsat pouze bojler a důvod ohřevu/vypnutí. Nemíchat wallbox ani battery grid, pokud nejsou v eventu.
+Důvod: týdenní balanc ani deficit nejsou tématem eventu.
 
-## Battery grid charge
+## `wallbox_disabled.json`
 
-Vstupy: `ai/examples/battery_grid_charge.json`, `ai/examples/battery_grid_stop.json`
+### Dobrý výstup
 
-Očekávaný styl: popsat pouze dobíjení baterie ze sítě a důvod. Nenavrhovat změnu proudu ani režimu.
+```text
+Wallbox je vypnutý, protože není připojené žádné auto. Není potřeba nic řešit.
+```
 
-## Safety / emergency
+### Špatný výstup
 
-Vstupy: `ai/examples/safety_ac_in_change.json`, `ai/examples/emergency_charge.json`
+```text
+Zkontrolujte komunikaci s wallboxem nebo nastavení EMS.
+```
 
-Očekávaný styl: klidně a jasně popsat bezpečnostní stav. U kritického eventu nepřidávat spekulace ani servisní návody.
+Důvod: `no_car_connected` není chyba komunikace.
 
-## Weekly battery balance
+## `boiler_started.json`
 
-Vstup: `ai/examples/weekly_battery_balance.json`
+### Dobrý výstup
 
-Očekávaný styl: vysvětlit, že jde o plánované/balanční dobití baterie, pokud to uvádí `reason_display` nebo `human_hint`.
+```text
+Spodní bojler se zapnul z přebytku FVE. Baterie už je nad cílem, takže je energie kam uložit.
+```
+
+### Špatný výstup
+
+```text
+Doporučuji sledovat teplotu vody a případně bojler vypnout.
+```
+
+Důvod: takové doporučení není ve vstupu.
+
+## `battery_grid_charge.json`
+
+### Dobrý výstup
+
+```text
+Baterie se v levném tarifu dobíjí k cílovému SOC. EMS tím připravuje rezervu na horší výrobu.
+```
+
+### Špatný výstup
+
+```text
+Zkontrolujte, zda je síťové dobíjení opravdu nutné.
+```
+
+Důvod: event už obsahuje autoritativní rozhodnutí EMS.
+
+## Hodnocení
+
+Každý výstup hodnotit 0–2 body v kategoriích:
+
+- věrnost eventu,
+- žádné halucinace,
+- lidská čeština,
+- stručnost,
+- dodržení zakázaných témat.
+
+Maximum je 10 bodů.

@@ -209,7 +209,7 @@ cards:
       - type: markdown
         title: 🧠 EMS AI komentář
         content: >-
-          {{ states('sensor.ems_ai_comment') }}
+          {{ states('sensor.ems_ai_komentar') }}
       - type: vertical-stack
         title: Auta
         cards:

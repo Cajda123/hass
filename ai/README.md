@@ -60,17 +60,10 @@ Skripty patří do repozitáře, ne do Home Assistant konfigurace:
 Aktuální produkční runtime je pořád:
 
 ```text
-nodered/ems_ai_commentator_flow.json → samostatně importovatelný Node-RED AI flow
+nodered/flows.json  → Node-RED AI flow
 homeassistant/ems_ai.yaml → MQTT senzory
 homeassistant/dashboard_family.yaml → karta s komentářem
 ```
-
-
-### Merge-friendly poznámka
-
-Kvůli častým konfliktům v jednořádkovém exportu `nodered/flows.json` je AI komentátor uložený také jako samostatný importovatelný flow `nodered/ems_ai_commentator_flow.json`. Tento soubor jde importovat v Node-RED přes **Import → Clipboard/File** bez přepisování hlavního EMS flow.
-
-Produkční managery musí při integraci stále nastavovat `global.ems.ai_event` podle `ai/schemas/event.schema.json`; standalone AI tab tento event čte z globálního `ems` objektu a ruční inject funguje i bez manager eventu.
 
 ### Jak použít JS SDK
 
@@ -112,36 +105,3 @@ python3 ai/benchmarks/benchmark_ollama.py --url http://10.200.5.122:11434/api/ge
 ```
 
 Výstup je Markdown tabulka s průměrným/min/max časem a krátkou ukázkou odpovědi. Kvalitu je potřeba posoudit ručně: odpověď má být česky, krátká, bez vymýšlení hodnot a bez návrhů na přímé ovládání zařízení.
-
-## Node-RED runtime kontrola
-
-Importovatelný tab `EMS 90 AI komentátor` v `nodered/ems_ai_commentator_flow.json` čte poslední standardizovaný `ems.ai_event`, aplikuje 90s start guard, deduplikaci podle `event.key`, 120s cooldown a ignoruje automatické eventy se `silent: true`.
-
-Každý komentovatelný event musí obsahovat minimálně:
-
-```text
-topic, type, key, importance,
-status_display, reason_display,
-human_hint, recommendation_hint,
-allowed_topics, forbidden_topics,
-notify, speak, silent
-```
-
-Ruční test v Node-RED:
-
-1. Deployni flow.
-2. Počkej alespoň 90 sekund po deployi.
-3. Na tabu `EMS 90 AI komentátor` klikni na inject `Ručně okomentuj stav`.
-4. Ruční inject musí projít i přes cooldown a deduplikaci.
-
-Ověření MQTT výstupů:
-
-```bash
-mosquitto_sub -h core-mosquitto -t 'ems/ai/#' -v
-```
-
-Očekávané topic výstupy:
-
-- `ems/ai/comment` – čistý český komentář,
-- `ems/ai/status` – JSON metadata včetně modelu, délky běhu a `event_key`,
-- `ems/ai/error` – chyba Ollamy nebo prázdná odpověď.

@@ -377,7 +377,3 @@ AI flow v Node-RED používá poslední `ems.ai_event`, deduplikuje podle `event
 - `ems/ai/error` – chyba nebo prázdná odpověď.
 
 AI komentář je informativní vrstva. Bezpečnostní priority, vypínání/zapínání wallboxů, bojlerů, AC-in a dobíjení baterie zůstávají výhradně v deterministických Node-RED managerech.
-
-Event nesmí míchat rozhodnutí více managerů. `wallbox` event popisuje pouze wallbox, `boiler` pouze bojler, `battery_grid` pouze dobíjení baterie ze sítě, `safety` pouze AC-in / emergency safety a `battery_balance` pouze údržbový úkol baterie. Povinné hinty `human_hint`, `recommendation_hint`, `allowed_topics` a `forbidden_topics` omezují, co smí AI komentovat.
-
-Kvůli minimalizaci merge konfliktů v hlavním Node-RED exportu je AI komentátor dostupný i jako samostatný importovatelný flow `nodered/ems_ai_commentator_flow.json`. Hlavní `nodered/flows.json` se kvůli AI nemá přepisovat v bulk refaktoru; integrace manager eventů má být malá cílená změna v konkrétních Function nodech.

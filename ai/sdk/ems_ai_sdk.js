@@ -20,13 +20,8 @@ function createEvent(topic, type, decision = {}, extra = {}) {
     status_display: decision.status_display || extra.status_display || String(status),
     reason,
     reason_display: decision.reason_display || extra.reason_display || String(reason),
-    human_hint: extra.human_hint || decision.human_hint || `${String(status)}: ${String(reason)}`,
-    recommendation_hint: extra.recommendation_hint || decision.recommendation_hint || 'Pouze stručně vysvětli stav. Nenavrhuj žádné přímé ovládání zařízení.',
-    allowed_topics: extra.allowed_topics || decision.allowed_topics || ['aktuální rozhodnutí EMS'],
-    forbidden_topics: extra.forbidden_topics || decision.forbidden_topics || ['přímé ovládání zařízení', 'nesouvisející EMS managery'],
     notify: Boolean(extra.notify),
     speak: Boolean(extra.speak),
-    silent: Boolean(extra.silent),
     ts: extra.ts || Date.now(),
   };
 }

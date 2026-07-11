@@ -42,17 +42,32 @@
       ],
       "default": "normal"
     },
-    "status": {
-      "type": "string"
+    "status": { "type": "string" },
+    "status_display": { "type": "string" },
+    "reason": { "type": "string" },
+    "reason_display": { "type": "string" },
+    "human_hint": {
+      "type": "string",
+      "description": "Authoritative human-readable statement of what happened. The model should rewrite it, not reinterpret it."
     },
-    "status_display": {
-      "type": "string"
+    "recommendation_hint": {
+      "type": "string",
+      "description": "Authoritative recommendation. If omitted, the model must not invent advice."
     },
-    "reason": {
-      "type": "string"
+    "allowed_topics": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Topics the output may mention."
     },
-    "reason_display": {
-      "type": "string"
+    "forbidden_topics": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Topics the output must not mention."
+    },
+    "silent": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the commentator must return BEZ_KOMENTARE."
     },
     "notify": {
       "type": "boolean",
