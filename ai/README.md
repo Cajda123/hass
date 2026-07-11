@@ -9,6 +9,7 @@ Tahle složka drží verzované prompty, schémata, příklady a testy pro loká
 - AI nikdy přímo neovládá zařízení.
 - Do AI neposílat celý `global.ems`, ale kompaktní snapshot + konkrétní event.
 - Rodinný poradce může nabídnout akci, ale nikdy ji nesmí provést bez potvrzení uživatele.
+- O příjemci mobilní notifikace, expiraci otázky a provedení potvrzené akce rozhoduje pouze Node-RED notification router.
 
 ## Režimy
 
@@ -31,16 +32,33 @@ Používá:
 Typický výstup:
 
 ```text
-Pračku nebo myčku teď klidně pusť, baterka je nad cílem a přebytky už jdou do spodního bojleru. Vaření je v pohodě, je na jiných fázích. Jestli chceš péct, můžu na tu dobu vypnout spodní bojler, protože trouba je s ním na L3.
+Myčku teď klidně pusť. Pračka i trouba jsou ale na L3 společně se spodním bojlerem. Jestli chceš péct, mám na tu dobu spodní bojler vypnout?
 ```
 
 ### Analytik
 
 Delší ruční odpověď na otázku nad historií, logy nebo agregovaným průběhem.
 
-### Notifikátor
+### Notifikátor a router
 
-Velmi krátká notifikace pro mobil / HA, jen pokud je event důležitý.
+AI vytvoří lidský text. Deterministický router pak podle `event.notification`, původce akce a přítomnosti osob rozhodne, komu ho poslat.
+
+Pravidla:
+
+- `error` a `critical` → vždy oba mobily, i když nikdo není doma,
+- `question` → nejdřív původci akce, jinak osobě doma,
+- neznámý původce + oba doma → oběma, první odpověď vyhrává,
+- `advice` a `info` → pouze lidem doma,
+- každá otázka má `question_id`, expiraci a předem povolené `action_id`,
+- potvrzenou akci provede Node-RED až po nové kontrole podmínek.
+
+Soubory:
+
+- `ai/notifications/policy.yaml`
+- `ai/notifications/README.md`
+- `ai/schemas/notification.schema.json`
+- `ai/examples/question_pause_bottom_boiler_for_oven.json`
+- `ai/examples/critical_error_both_phones.json`
 
 ## Ověřený runtime
 
@@ -76,11 +94,12 @@ Skripty patří do repozitáře, ne do Home Assistant konfigurace:
 - `ai/sdk/ems_ai_sdk.js` je vývojová knihovna / referenční implementace pro testy, budoucí tooling a případné generování Node-RED Function kódu. Node-RED ji teď přímo nenačítá, protože Function nody v běžné HA add-on instalaci nemají automaticky povolené `require()` z repozitáře.
 - `ai/benchmarks/benchmark_ollama.py` je ručně spouštěný benchmark z terminálu nad lokální Ollamou. Není součást runtime EMS a nic nezapíná ani nevypíná.
 - `ai/house/knowledge.yaml` je kontext pro AI, ne řídicí konfigurace.
+- `ai/notifications/policy.yaml` je referenční routing policy; produkční Node-RED Function node musí stejná pravidla implementovat deterministicky.
 
 Aktuální produkční runtime je pořád:
 
 ```text
-nodered/flows.json  → Node-RED AI flow
+nodered/flows.json  → Node-RED AI flow + notification router
 homeassistant/ems_ai.yaml → MQTT senzory
 homeassistant/dashboard_family.yaml → karta s komentářem
 ```
@@ -121,7 +140,7 @@ python3 ai/benchmarks/benchmark_ollama.py --model gemma3:4b --model llama3.1:8b
 python3 ai/benchmarks/benchmark_ollama.py --snapshot ai/examples/wallbox_disabled.json
 
 # Použít rodinného poradce
-python3 ai/benchmarks/benchmark_ollama.py --prompt ai/prompts/family_advisor.txt --snapshot ai/examples/family_surplus_boiler_oven_offer.json
+python3 ai/benchmarks/benchmark_ollama.py --prompt ai/prompts/family_advisor.txt --snapshot ai/examples/question_pause_bottom_boiler_for_oven.json
 
 # Použít jinou Ollama URL
 python3 ai/benchmarks/benchmark_ollama.py --url http://10.200.5.122:11434/api/generate
