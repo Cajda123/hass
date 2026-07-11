@@ -66,6 +66,22 @@ Zkontrolujte, zda je síťové dobíjení opravdu nutné.
 
 Důvod: event už obsahuje autoritativní rozhodnutí EMS.
 
+## `family_surplus_boiler_oven_offer.json`
+
+### Dobrý výstup
+
+```text
+Pračku nebo myčku teď klidně pusť, baterka je nad cílem a přebytky už jdou do spodního bojleru. Vaření je v pohodě, je na jiných fázích. Jestli chceš péct, můžu na tu dobu vypnout spodní bojler, protože trouba je s ním na L3.
+```
+
+### Špatný výstup
+
+```text
+Systém pracuje v režimu PV_ONLY a doporučuji sledovat spotřebu energie. Zkontrolujte nastavení bojleru a wallboxu.
+```
+
+Důvod: rodinný poradce má poradit prakticky pro domácí spotřebiče, ne dělat servisní report.
+
 ## Hodnocení
 
 Každý výstup hodnotit 0–2 body v kategoriích:
