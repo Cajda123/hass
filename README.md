@@ -17,11 +17,12 @@ nodered/
                     # Samostatný importovatelný flow pro AI komentátor
 
 docs/
-  architecture.md    # Architektura systému
-  decision_logic.md  # Chování EMS a rozhodovací priority
-  entities.md        # Důležité entity a význam
-  todo.md            # Další plánované práce
-  EMS_AI_CODEX.md    # Zadání pro Codex / další dodělávky AI vrstvy
+  architecture.md                  # Architektura systému
+  decision_logic.md                # Chování EMS a rozhodovací priority
+  force_modes_and_probe_logic.md   # Force režimy, FORCE_SOLAR, probe wallboxů a boilerů
+  entities.md                      # Důležité entity a význam
+  todo.md                          # Další plánované práce
+  EMS_AI_CODEX.md                  # Zadání pro Codex / další dodělávky AI vrstvy
 ```
 
 ## Hlavní cíle EMS
@@ -34,6 +35,28 @@ docs/
 - Nepřetěžovat žádnou fázi, měnič ani vstup ze sítě.
 - Logovat a zobrazovat, proč EMS něco zapnulo nebo vypnulo.
 - Udržet systém čitelný, modulární a rozšiřitelný.
+
+## Aktuální řízení wallboxů a boilerů
+
+Wallboxy a bojlery používají společnou filozofii řízených zátěží:
+
+- `AUTO` – EMS rozhoduje podle přebytku, baterie, tarifu, potřeby a priorit.
+- `FORCE_SOLAR` – jednorázově využít FVE a bezpečnou krátkou podporu baterie, bez přepnutí wallboxu na síť.
+- `FORCE_ANYTIME` – jednorázově pustit zátěž kdykoliv, stále přes tvrdé bezpečnostní limity.
+- `FORCE_NT_ONLY` – jednorázově pustit zátěž v NT / levném okně.
+- `OFF` – force nebo daná třída řízení je vypnutá.
+
+Force režimy jsou jednorázové. Po splnění cíle, doběhu času, dosažení energie/teploty nebo skončení relevantního okna se příslušný helper vrací na `OFF`.
+
+Wallboxy nekrokují proud po `+1 A`, ale podle pevné tabulky:
+
+```text
+6 A -> 8 A -> 10 A -> 13 A -> 16 A
+```
+
+Adaptivní solar probe zvyšuje proud nebo stupeň zátěže jen po jednom kroku, čeká na potvrzení skutečného stavu a dál přidává pouze tehdy, když baterie pořád nabíjí nebo je kolem nuly. Záporný výkon baterie zastavuje další přidávání; tvrdý limit podpory baterie je jen bezpečnostní brzda, ne cílový stav.
+
+Detailní pravidla jsou v `docs/force_modes_and_probe_logic.md`.
 
 ## Lokální AI komentátor
 
@@ -71,7 +94,7 @@ První cílový model na slabším CPU je `gemma3:4b`, pro obecné hraní přes 
 - Node-RED má obsahovat hlavní rozhodovací logiku.
 - Entity ID mají být pokud možno anglicky a stabilní.
 - UI názvy mohou být česky.
-- Změny v rozhodování se mají dokumentovat v `docs/decision_logic.md`.
+- Změny v rozhodování se mají dokumentovat v `docs/decision_logic.md` nebo detailním dokumentu v `docs/`.
 - AI vrstva nesmí měnit bezpečnostní ani akční logiku bez explicitního lidského zásahu.
 - Citlivé soubory, tokeny, credentials a runtime databáze do repozitáře nepatří.
 
