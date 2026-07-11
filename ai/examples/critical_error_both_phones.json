@@ -1,0 +1,40 @@
+{
+  "timestamp": "2026-07-11T13:00:00.000Z",
+  "event": {
+    "topic": "ems/safety",
+    "type": "safety",
+    "key": "safety:critical:inverter_unavailable",
+    "importance": "critical",
+    "status": "ERROR",
+    "status_display": "Měnič neodpovídá",
+    "reason": "inverter_unavailable",
+    "reason_display": "EMS ztratilo komunikaci s měničem",
+    "human_hint": "EMS nevidí aktuální stav měniče a nemůže bezpečně ověřit řízení baterie.",
+    "recommendation_hint": "Zkontroluj napájení a komunikaci měniče.",
+    "actor": {
+      "person_id": null,
+      "source": "automation",
+      "device_id": null,
+      "confidence": 1
+    },
+    "action_offers": [],
+    "notification": {
+      "kind": "critical",
+      "audience": "both",
+      "urgency": "persistent",
+      "requires_response": false,
+      "question_id": null,
+      "action_id": null,
+      "collapse_key": "ems-error-inverter-unavailable",
+      "repeat_while_active": true,
+      "repeat_interval_s": 900,
+      "clear_when_resolved": true,
+      "presence_required": false
+    },
+    "allowed_topics": ["safety", "inverter", "communication"],
+    "forbidden_topics": ["weekly_balance", "family_advice", "appliance_timing"],
+    "notify": true,
+    "speak": false,
+    "silent": false
+  }
+}
