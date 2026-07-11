@@ -1,0 +1,73 @@
+# Znalosti domu pro EMS AI
+#
+# Tohle není runtime konfigurace řízení. Je to kontext pro AI poradce,
+# aby uměl lidsky poradit, co je vhodné pustit a kde jsou fázové konflikty.
+# Akce z této vrstvy se nikdy nesmí provádět bez potvrzení uživatele.
+
+house:
+  style:
+    audience: "rodina"
+    voice: "jako David vysvětluje doma, co se teď dá pustit"
+    default_no_action: "Není potřeba nic řešit."
+
+  phases:
+    L1:
+      note: "Jedna z fází pro vaření."
+    L2:
+      note: "Druhá fáze pro vaření."
+    L3:
+      note: "Společná fáze pro spodní bojler a troubu."
+
+  appliances:
+    bottom_boiler:
+      label: "spodní bojler"
+      phase: "L3"
+      type: "controlled_load"
+      can_be_paused: true
+      pause_script: "script.ems_pause_bottom_boiler_for_oven"
+      note: "Když běží spodní bojler a má se péct v troubě, nabídnout dočasné vypnutí bojleru."
+
+    oven:
+      label: "trouba"
+      phase: "L3"
+      type: "manual_load"
+      conflicts_with:
+        - "bottom_boiler"
+      advice_when_conflict: "Jestli chceš péct, můžu na tu dobu vypnout spodní bojler, protože trouba je s ním na stejné fázi."
+
+    hob:
+      label: "varná deska"
+      phases:
+        - "L1"
+        - "L2"
+      type: "manual_load"
+      note: "Vaření je na zbylých dvou fázích, takže nekoliduje přímo se spodním bojlerem na L3."
+
+    washing_machine:
+      label: "pračka"
+      type: "manual_load"
+      preferred_when:
+        - "battery_above_target"
+        - "solar_surplus_available"
+      note: "Když je baterie nad cílem a EMS už posílá přebytek do bojleru, je dobrá chvíle pustit pračku."
+
+    dishwasher:
+      label: "myčka"
+      type: "manual_load"
+      preferred_when:
+        - "battery_above_target"
+        - "solar_surplus_available"
+      note: "Když je baterie nad cílem a EMS už posílá přebytek do bojleru, je dobrá chvíle pustit myčku."
+
+  advice_rules:
+    - id: "surplus_household_loads_ok"
+      when: "battery_soc >= target_soc and boiler_running_from_surplus"
+      say: "Je dobrá chvíle pustit běžné zátěže jako pračku nebo myčku."
+
+    - id: "oven_conflicts_with_bottom_boiler"
+      when: "bottom_boiler_on and user_may_want_oven"
+      say: "Trouba je na stejné fázi jako spodní bojler. Nabídni dočasné vypnutí bojleru, ale nic nevypínej bez potvrzení."
+
+    - id: "hob_ok_when_bottom_boiler_on"
+      when: "bottom_boiler_on"
+      say: "Vaření je na L1+L2, takže nekoliduje přímo se spodním bojlerem na L3."
