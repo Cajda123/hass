@@ -26,7 +26,7 @@
     },
     "type": {
       "type": "string",
-      "description": "Logical event type: safety, wallbox, boiler, battery_grid, plan, appliance."
+      "description": "Logical event type: safety, wallbox, boiler, battery_grid, plan, appliance, family_advice."
     },
     "key": {
       "type": "string",
@@ -34,12 +34,7 @@
     },
     "importance": {
       "type": "string",
-      "enum": [
-        "debug",
-        "normal",
-        "important",
-        "critical"
-      ],
+      "enum": ["debug", "normal", "important", "critical"],
       "default": "normal"
     },
     "status": { "type": "string" },
@@ -48,11 +43,36 @@
     "reason_display": { "type": "string" },
     "human_hint": {
       "type": "string",
-      "description": "Authoritative human-readable statement of what happened. The model should rewrite it, not reinterpret it."
+      "description": "Authoritative Czech explanation of what happened. The model should rewrite it, not reinterpret it."
     },
     "recommendation_hint": {
       "type": "string",
-      "description": "Authoritative recommendation. If omitted, the model must not invent advice."
+      "description": "Authoritative Czech recommendation. If omitted or empty, the model must not invent advice."
+    },
+    "family_hint": {
+      "type": "string",
+      "description": "Optional household-facing hint, for example which appliances are OK to run now. Intended for family dashboard/advisor mode."
+    },
+    "question_hint": {
+      "type": "string",
+      "description": "Optional question or offer to the user. It must be non-binding and require confirmation before any action."
+    },
+    "action_offers": {
+      "type": "array",
+      "description": "Optional safe offers the assistant may mention. These are not executed automatically.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["id", "title", "requires_confirmation"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "script": { "type": "string" },
+          "requires_confirmation": { "type": "boolean", "const": true },
+          "valid_when": { "type": "string" }
+        }
+      }
     },
     "allowed_topics": {
       "type": "array",
@@ -76,32 +96,6 @@
     "speak": {
       "type": "boolean",
       "description": "Whether this event may be spoken by a future voice layer."
-    },
-    "human_hint": {
-      "type": "string",
-      "description": "Short Czech explanation of what happened; source text for AI, not a command."
-    },
-    "recommendation_hint": {
-      "type": "string",
-      "description": "Allowed Czech recommendation; AI must not recommend actions outside this hint."
-    },
-    "allowed_topics": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Topics the AI may mention for this event."
-    },
-    "forbidden_topics": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Topics the AI must not mention for this event."
-    },
-    "silent": {
-      "type": "boolean",
-      "description": "Whether the automatic commentator must ignore this event."
     }
   }
 }
