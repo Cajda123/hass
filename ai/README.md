@@ -8,12 +8,31 @@ Tahle složka drží verzované prompty, schémata, příklady a testy pro loká
 - AI pouze vysvětluje stav, event nebo rozhodnutí EMS.
 - AI nikdy přímo neovládá zařízení.
 - Do AI neposílat celý `global.ems`, ale kompaktní snapshot + konkrétní event.
+- Rodinný poradce může nabídnout akci, ale nikdy ji nesmí provést bez potvrzení uživatele.
 
 ## Režimy
 
 ### Komentátor
 
 Krátký automatický komentář k eventu. Výstup typicky do MQTT topicu `ems/ai/comment`.
+
+### Rodinný poradce
+
+Praktická odpověď pro domácnost: jestli je vhodná chvíle pustit pračku, myčku, vaření nebo troubu.
+
+Používá:
+
+- `ai/prompts/family_advisor.txt`,
+- `ai/house/knowledge.yaml`,
+- `event.family_hint`,
+- `event.question_hint`,
+- `event.action_offers`.
+
+Typický výstup:
+
+```text
+Pračku nebo myčku teď klidně pusť, baterka je nad cílem a přebytky už jdou do spodního bojleru. Vaření je v pohodě, je na jiných fázích. Jestli chceš péct, můžu na tu dobu vypnout spodní bojler, protože trouba je s ním na L3.
+```
 
 ### Analytik
 
@@ -56,6 +75,7 @@ Skripty patří do repozitáře, ne do Home Assistant konfigurace:
 
 - `ai/sdk/ems_ai_sdk.js` je vývojová knihovna / referenční implementace pro testy, budoucí tooling a případné generování Node-RED Function kódu. Node-RED ji teď přímo nenačítá, protože Function nody v běžné HA add-on instalaci nemají automaticky povolené `require()` z repozitáře.
 - `ai/benchmarks/benchmark_ollama.py` je ručně spouštěný benchmark z terminálu nad lokální Ollamou. Není součást runtime EMS a nic nezapíná ani nevypíná.
+- `ai/house/knowledge.yaml` je kontext pro AI, ne řídicí konfigurace.
 
 Aktuální produkční runtime je pořád:
 
@@ -99,6 +119,9 @@ python3 ai/benchmarks/benchmark_ollama.py --model gemma3:4b --model llama3.1:8b
 
 # Použít jiný příklad/snapshot
 python3 ai/benchmarks/benchmark_ollama.py --snapshot ai/examples/wallbox_disabled.json
+
+# Použít rodinného poradce
+python3 ai/benchmarks/benchmark_ollama.py --prompt ai/prompts/family_advisor.txt --snapshot ai/examples/family_surplus_boiler_oven_offer.json
 
 # Použít jinou Ollama URL
 python3 ai/benchmarks/benchmark_ollama.py --url http://10.200.5.122:11434/api/generate
