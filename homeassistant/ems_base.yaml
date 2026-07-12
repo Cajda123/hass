@@ -142,7 +142,7 @@ input_select:
   ems_id3_wallbox_force_mode:
     name: EMS ID.3 Force nabíjení - režim
     icon: mdi:car-electric
-    options: ['OFF', 'FORCE_ANYTIME', 'FORCE_NT_ONLY']
+    options: ['OFF', 'FORCE_ANYTIME', 'FORCE_NT_ONLY', 'FORCE_SOLAR']
     initial: 'OFF'
 
   ems_id3_wallbox_force_goal:
@@ -154,7 +154,7 @@ input_select:
   ems_id4_wallbox_force_mode:
     name: EMS ID.4 Force nabíjení - režim
     icon: mdi:car-electric
-    options: ['OFF', 'FORCE_ANYTIME', 'FORCE_NT_ONLY']
+    options: ['OFF', 'FORCE_ANYTIME', 'FORCE_NT_ONLY', 'FORCE_SOLAR']
     initial: 'OFF'
 
   ems_id4_wallbox_force_goal:
@@ -166,7 +166,7 @@ input_select:
   ems_bottom_boiler_force_mode:
     name: EMS spodní bojler Force - režim
     icon: mdi:water-boiler
-    options: ['OFF', 'FORCE_ANYTIME', 'FORCE_NT_ONLY']
+    options: ['OFF', 'FORCE_ANYTIME', 'FORCE_NT_ONLY', 'FORCE_SOLAR']
     initial: 'OFF'
 
   ems_bottom_boiler_force_goal:
@@ -178,7 +178,7 @@ input_select:
   ems_pergola_boiler_force_mode:
     name: EMS pergola bojler Force - režim
     icon: mdi:water-boiler
-    options: ['OFF', 'FORCE_ANYTIME', 'FORCE_NT_ONLY']
+    options: ['OFF', 'FORCE_ANYTIME', 'FORCE_NT_ONLY', 'FORCE_SOLAR']
     initial: 'OFF'
 
   ems_pergola_boiler_force_goal:
@@ -667,6 +667,34 @@ input_number:
     icon: mdi:counter
     initial: 2
 
+
+  ems_high_soc_load_threshold:
+    name: EMS high-SOC práh pro zátěže
+    min: 70
+    max: 100
+    step: 1
+    unit_of_measurement: "%"
+    icon: mdi:battery-arrow-up
+    initial: 90
+
+  ems_full_soc_load_threshold:
+    name: EMS práh aktivního hledání zátěže
+    min: 80
+    max: 100
+    step: 1
+    unit_of_measurement: "%"
+    icon: mdi:battery-charging-high
+    initial: 95
+
+  ems_solar_load_support_hard_limit_w:
+    name: EMS tvrdý limit podpory baterie pro FV zátěže
+    min: -6000
+    max: 0
+    step: 100
+    unit_of_measurement: W
+    icon: mdi:battery-alert-variant-outline
+    initial: -3000
+
 mqtt:
   sensor:
     - name: EMS Grid Purchase Summary
@@ -735,6 +763,26 @@ mqtt:
           {{ item.step }}={{ item.state }}{% if not loop.last %} | {% endif %}
         {% endfor %}
       icon: mdi:source-branch
+
+
+    - name: EMS Decision Trace Detailed
+      unique_id: ems_decision_trace_detailed
+      state_topic: ems/decision/trace
+      value_template: "{{ value_json.boiler.selected | default(value_json.selected | default('IDLE')) }}"
+      json_attributes_topic: ems/decision/trace
+      icon: mdi:source-branch-check
+
+    - name: EMS High SOC Load State
+      unique_id: ems_high_soc_load_state
+      state_topic: ems/decision/trace
+      value_template: >-
+        {% if value_json.inputs.high_soc_loads_allowed | default(false) %}
+          allowed
+        {% else %}
+          blocked
+        {% endif %}
+      json_attributes_topic: ems/decision/trace
+      icon: mdi:battery-arrow-up-outline
 
     - name: EMS Wallbox Reason
       unique_id: ems_wallbox_reason
@@ -1307,6 +1355,23 @@ template:
           {% else %}
             expensive
           {% endif %}
+
+
+      - name: EMS High SOC Loads Allowed
+        unique_id: ems_high_soc_loads_allowed
+        icon: mdi:battery-arrow-up
+        state: >
+          {% set soc = states('sensor.ems_battery_soc') | float(0) %}
+          {% set threshold = states('input_number.ems_high_soc_load_threshold') | float(90) %}
+          {{ soc >= threshold and not is_state('binary_sensor.ems_battery_load_locked', 'on') }}
+
+      - name: EMS Full SOC Load Probe
+        unique_id: ems_full_soc_load_probe
+        icon: mdi:battery-charging-high
+        state: >
+          {% set soc = states('sensor.ems_battery_soc') | float(0) %}
+          {% set threshold = states('input_number.ems_full_soc_load_threshold') | float(95) %}
+          {{ soc >= threshold and not is_state('binary_sensor.ems_battery_load_locked', 'on') }}
 
   - binary_sensor:
       - name: EMS Cheap Grid Usable
