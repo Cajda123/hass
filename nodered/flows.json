@@ -420,6 +420,44 @@
         "wires": []
     },
     {
+        "id": "ems_decision_trace_build",
+        "type": "function",
+        "z": "ems_tab_boiler",
+        "name": "publish ems/decision/trace",
+        "func": "const ems = global.get('ems') || {};\nmsg.topic = 'ems/decision/trace';\nmsg.payload = ems.decision_trace || {};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 760,
+        "y": 260,
+        "wires": [
+            [
+                "ems_decision_trace_mqtt"
+            ]
+        ]
+    },
+    {
+        "id": "ems_decision_trace_mqtt",
+        "type": "mqtt out",
+        "z": "ems_tab_boiler",
+        "name": "MQTT ems/decision/trace",
+        "topic": "",
+        "qos": "0",
+        "retain": "true",
+        "respTopic": "",
+        "contentType": "application/json",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "dfd2960398e9d1c1",
+        "x": 1020,
+        "y": 260,
+        "wires": []
+    },
+    {
         "id": "ems_dashboard_tick",
         "type": "inject",
         "z": "ems_mqtt_tab",
@@ -1342,6 +1380,35 @@
         "wires": []
     },
     {
+        "id": "ems_force_mode_auto_off",
+        "type": "api-call-service",
+        "z": "ems_tab_tasks",
+        "name": "Force task completed -> OFF",
+        "server": "d6487c47.43254",
+        "version": 7,
+        "debugenabled": false,
+        "action": "input_select.select_option",
+        "floorId": [],
+        "areaId": [],
+        "deviceId": [],
+        "entityId": [],
+        "labelId": [],
+        "data": "{\"entity_id\":\"{{payload.entity_id}}\",\"option\":\"{{payload.option}}\"}",
+        "dataType": "json",
+        "mergeContext": "",
+        "mustacheAltTags": false,
+        "outputProperties": [],
+        "queue": "none",
+        "blockInputOverrides": false,
+        "domain": "input_select",
+        "service": "select_option",
+        "x": 760,
+        "y": 360,
+        "wires": [
+            []
+        ]
+    },
+    {
         "id": "ems_cost_tick",
         "type": "inject",
         "z": "ems_tab_cost",
@@ -1625,78 +1692,11 @@
         "wires": []
     },
     {
-        "id": "df8eb53ee98e5c5a",
+        "id": "46a2bd4d5c25816d",
         "type": "global-config",
         "env": [],
         "modules": {
             "node-red-contrib-home-assistant-websocket": "0.80.3"
         }
-    },
-    {
-        "id": "ems_force_mode_auto_off",
-        "type": "api-call-service",
-        "z": "ems_tab_tasks",
-        "name": "Force task completed -> OFF",
-        "server": "d6487c47.43254",
-        "version": 7,
-        "debugenabled": false,
-        "action": "input_select.select_option",
-        "floorId": [],
-        "areaId": [],
-        "deviceId": [],
-        "entityId": [],
-        "labelId": [],
-        "data": "{\"entity_id\":\"{{payload.entity_id}}\",\"option\":\"{{payload.option}}\"}",
-        "dataType": "json",
-        "mergeContext": "",
-        "mustacheAltTags": false,
-        "outputProperties": [],
-        "queue": "none",
-        "blockInputOverrides": false,
-        "domain": "input_select",
-        "service": "select_option",
-        "x": 760,
-        "y": 360,
-        "wires": [
-            []
-        ]
-    },
-    {
-        "id": "ems_decision_trace_build",
-        "type": "function",
-        "z": "ems_tab_boiler",
-        "name": "publish ems/decision/trace",
-        "func": "const ems = global.get('ems') || {};\nmsg.topic = 'ems/decision/trace';\nmsg.payload = ems.decision_trace || {};\nreturn msg;",
-        "outputs": 1,
-        "timeout": "",
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 760,
-        "y": 260,
-        "wires": [
-            [
-                "ems_decision_trace_mqtt"
-            ]
-        ]
-    },
-    {
-        "id": "ems_decision_trace_mqtt",
-        "type": "mqtt out",
-        "z": "ems_tab_boiler",
-        "name": "MQTT ems/decision/trace",
-        "topic": "",
-        "qos": "0",
-        "retain": "true",
-        "respTopic": "",
-        "contentType": "application/json",
-        "userProps": "",
-        "correl": "",
-        "expiry": "",
-        "broker": "dfd2960398e9d1c1",
-        "x": 1020,
-        "y": 260,
-        "wires": []
     }
 ]
