@@ -695,6 +695,34 @@ input_number:
     icon: mdi:battery-alert-variant-outline
     initial: -3000
 
+
+  ems_grid_handoff_reserve_soc:
+    name: EMS rezerva SOC před přechodem na síť
+    min: 0
+    max: 20
+    step: 1
+    unit_of_measurement: "%"
+    icon: mdi:battery-lock
+    initial: 5
+
+  ems_grid_handoff_safety_minutes:
+    name: EMS časová rezerva pro nákup v NT
+    min: 0
+    max: 180
+    step: 5
+    unit_of_measurement: min
+    icon: mdi:clock-alert-outline
+    initial: 20
+
+  ems_grid_handoff_min_drain_w:
+    name: EMS minimální odhad vybíjení pro handoff
+    min: 100
+    max: 5000
+    step: 100
+    unit_of_measurement: W
+    icon: mdi:battery-arrow-down-outline
+    initial: 300
+
 mqtt:
   sensor:
     - name: EMS Grid Purchase Summary
@@ -722,6 +750,34 @@ mqtt:
       value_template: "{{ value_json.plan.grid_purchase.planned_kwh | default(0) }}"
       unit_of_measurement: "kWh"
       icon: mdi:cash-clock
+
+    - name: EMS Grid Handoff SOC
+      unique_id: ems_grid_handoff_soc
+      state_topic: ems/decision/state
+      value_template: "{{ value_json.plan.grid_purchase.handoff.handoff_soc | default(0) }}"
+      unit_of_measurement: "%"
+      icon: mdi:battery-lock
+
+    - name: EMS Grid Handoff Usable Battery
+      unique_id: ems_grid_handoff_usable_battery_kwh
+      state_topic: ems/decision/state
+      value_template: "{{ value_json.plan.grid_purchase.handoff.battery_usable_kwh | default(0) }}"
+      unit_of_measurement: "kWh"
+      icon: mdi:battery-arrow-down
+
+    - name: EMS Grid Handoff Estimate
+      unique_id: ems_grid_handoff_estimate
+      state_topic: ems/decision/state
+      value_template: "{{ value_json.plan.grid_purchase.handoff.battery_handoff_estimate | default('není') }}"
+      icon: mdi:clock-fast
+
+    - name: EMS Next Grid Load
+      unique_id: ems_next_grid_load
+      state_topic: ems/decision/state
+      value_template: "{{ value_json.plan.grid.next_active_load.id | default('none') }}"
+      json_attributes_topic: ems/decision/state
+      icon: mdi:transmission-tower-import
+
     - name: EMS ID3 Required kWh
       unique_id: ems_id3_required_kwh
       state_topic: ems/decision/state
