@@ -77,7 +77,7 @@
         "info": "Grid energy/cost per EV"
     },
     {
-        "id": "ems_ai_tab",
+        "id": "62d821b54313b13f",
         "type": "tab",
         "label": "EMS 90 AI komentátor",
         "disabled": false,
@@ -417,6 +417,44 @@
         ],
         "x": 645,
         "y": 200,
+        "wires": []
+    },
+    {
+        "id": "ems_decision_trace_build",
+        "type": "function",
+        "z": "ems_tab_boiler",
+        "name": "publish ems/decision/trace",
+        "func": "const ems = global.get('ems') || {};\nmsg.topic = 'ems/decision/trace';\nmsg.payload = ems.decision_trace || {};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 760,
+        "y": 260,
+        "wires": [
+            [
+                "ems_decision_trace_mqtt"
+            ]
+        ]
+    },
+    {
+        "id": "ems_decision_trace_mqtt",
+        "type": "mqtt out",
+        "z": "ems_tab_boiler",
+        "name": "MQTT ems/decision/trace",
+        "topic": "",
+        "qos": "0",
+        "retain": "true",
+        "respTopic": "",
+        "contentType": "application/json",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "dfd2960398e9d1c1",
+        "x": 1020,
+        "y": 260,
         "wires": []
     },
     {
@@ -1342,6 +1380,35 @@
         "wires": []
     },
     {
+        "id": "ems_force_mode_auto_off",
+        "type": "api-call-service",
+        "z": "ems_tab_tasks",
+        "name": "Force task completed -> OFF",
+        "server": "d6487c47.43254",
+        "version": 7,
+        "debugenabled": false,
+        "action": "input_select.select_option",
+        "floorId": [],
+        "areaId": [],
+        "deviceId": [],
+        "entityId": [],
+        "labelId": [],
+        "data": "{\"entity_id\":\"{{payload.entity_id}}\",\"option\":\"{{payload.option}}\"}",
+        "dataType": "json",
+        "mergeContext": "",
+        "mustacheAltTags": false,
+        "outputProperties": [],
+        "queue": "none",
+        "blockInputOverrides": false,
+        "domain": "input_select",
+        "service": "select_option",
+        "x": 760,
+        "y": 360,
+        "wires": [
+            []
+        ]
+    },
+    {
         "id": "ems_cost_tick",
         "type": "inject",
         "z": "ems_tab_cost",
@@ -1435,9 +1502,9 @@
         "wires": []
     },
     {
-        "id": "ems_ai_tick",
+        "id": "b117760fd97dc726",
         "type": "inject",
-        "z": "ems_ai_tab",
+        "z": "62d821b54313b13f",
         "name": "AI kontrola každou minutu",
         "props": [],
         "repeat": "60",
@@ -1447,14 +1514,14 @@
         "y": 80,
         "wires": [
             [
-                "ems_ai_event_gate"
+                "7eca984473ca173e"
             ]
         ]
     },
     {
-        "id": "ems_ai_manual",
+        "id": "b6b0ac3b4bff0bc3",
         "type": "inject",
-        "z": "ems_ai_tab",
+        "z": "62d821b54313b13f",
         "name": "Ručně okomentuj stav",
         "props": [
             {
@@ -1469,14 +1536,14 @@
         "y": 140,
         "wires": [
             [
-                "ems_ai_event_gate"
+                "7eca984473ca173e"
             ]
         ]
     },
     {
-        "id": "ems_ai_event_gate",
+        "id": "7eca984473ca173e",
         "type": "function",
-        "z": "ems_ai_tab",
+        "z": "62d821b54313b13f",
         "name": "AI event gate dedupe + cooldown",
         "func": "const ems = global.get('ems') || {};\nconst now = Date.now();\nconst startedAt = context.get('startedAt') || now;\ncontext.set('startedAt', startedAt);\n\nif (now - startedAt < 90000 && !msg.force) return null;\n\nconst event = msg.ems_ai_event || ems.ai_event || {\n    topic: 'ems/ai/manual', type: 'manual', key: 'manual:periodic_state',\n    importance: 'normal', status: ems.core?.ems_enabled ? 'READY' : 'OFF',\n    status_display: ems.core?.ems_enabled ? 'EMS běží' : 'EMS vypnuté',\n    reason: ems.core?.ems_enabled ? 'periodic_state' : 'ems_disabled',\n    reason_display: ems.core?.ems_enabled ? 'Pravidelný stav' : 'EMS je vypnuté nebo zakázané',\n    notify: false, speak: false, ts: now\n};\nconst eventKey = event.key || `${event.topic}:${event.type}:${event.status}:${event.reason}`;\nif (!msg.force && String(event.reason || eventKey).includes('ems_disabled')) return null;\nconst lastEventKey = context.get('lastEventKey');\nconst lastRun = context.get('lastRun') || 0;\nif (!msg.force) {\n    if (eventKey === lastEventKey) return null;\n    if (now - lastRun < 120000) return null;\n}\ncontext.set('lastEventKey', eventKey);\ncontext.set('lastRun', now);\nmsg.ems_ai_event = {...event, key: eventKey};\nmsg.ems_snapshot = ems;\nmsg.ems_ai_started_at = now;\nreturn msg;",
         "outputs": 1,
@@ -1489,14 +1556,14 @@
         "y": 100,
         "wires": [
             [
-                "ems_ai_prepare"
+                "0586606da7b14bee"
             ]
         ]
     },
     {
-        "id": "ems_ai_prepare",
+        "id": "0586606da7b14bee",
         "type": "function",
-        "z": "ems_ai_tab",
+        "z": "62d821b54313b13f",
         "name": "Build compact snapshot + prompt",
         "func": "const ems = msg.ems_snapshot || {};\nconst core = ems.core || {};\nconst event = msg.ems_ai_event || ems.ai_event || {};\nconst prompt = flow.get('ems_ai_commentator_prompt') || `Jsi domácí EMS analytik. Odpovídej pouze česky, stručně, maximálně 3 věty.\nNikdy si nevymýšlej údaje. Nikdy nepopisuj JSON ani jeho strukturu.\nEMS je deterministické řízení a ty pouze vysvětluješ jeho stav a rozhodnutí.\nPokud je důvod \"ems_disabled\", znamená to, že EMS je vypnuté nebo zakázané, ne porucha komunikace.\nPoužívej přednostně české hodnoty reason_display a status_display, pokud jsou ve vstupu.\nŘekni, co se právě děje v domě a co doporučuješ.`;\n\nconst snapshot = {\n    timestamp: new Date().toISOString(),\n    event,\n    core: {\n        ems_enabled: !!core.ems_enabled,\n        hdo_state: core.hdo_state,\n        battery_soc: core.battery_soc,\n        battery_power: core.battery_power,\n        pv_power: core.pv_power,\n        grid_power: core.grid_power,\n        surplus_power: core.surplus_power,\n        deficit_power: core.deficit_power,\n        house_power: core.house_power,\n        target_soc: core.target_soc || ems.plan?.battery?.target_soc,\n        effective_min_soc: core.effective_min_soc || ems.plan?.battery?.effective_min_soc,\n        forecast_day_type_tomorrow: ems.plan?.strategy?.day_type_tomorrow\n    },\n    safety: ems.safety ? {\n        voltage: ems.safety.voltage,\n        ac_in_status: ems.safety.ac_in?.status,\n        ac_in_status_display: ems.safety.ac_in?.status_display,\n        ac_in_reason: ems.safety.ac_in?.reason,\n        ac_in_reason_display: ems.safety.ac_in?.reason_display,\n        emergency_status: ems.safety.emergency?.status,\n        emergency_status_display: ems.safety.emergency?.status_display,\n        emergency_reason: ems.safety.emergency?.reason,\n        emergency_reason_display: ems.safety.emergency?.reason_display\n    } : undefined,\n    wallbox: ems.wallbox ? {\n        mode: ems.wallbox.mode, reason: ems.wallbox.reason, reason_display: ems.wallbox.reason_display,\n        id3_connected: ems.plan?.cars?.id3?.connected, id4_connected: ems.plan?.cars?.id4?.connected,\n        selected_car: ems.wallbox.selected_car, current_a: Math.max(ems.wallbox.id3?.current_a || 0, ems.wallbox.id4?.current_a || 0)\n    } : undefined,\n    boiler: ems.boiler ? { mode: ems.boiler.mode, reason: ems.boiler.reason, reason_display: ems.boiler.reason_display } : undefined,\n    battery_grid: ems.battery_grid ? { mode: ems.battery_grid.mode, reason: ems.battery_grid.reason, current_a: ems.battery_grid.current_a, charge_enable: ems.battery_grid.charge_enable } : undefined\n};\nmsg.ems_ai_snapshot = snapshot;\nmsg.headers = { 'Content-Type': 'application/json' };\nmsg.payload = { model: flow.get('ems_ai_model') || 'gemma3:4b', prompt: `${prompt}\\n\\nStav:\\n${JSON.stringify(snapshot, null, 2)}`, stream: false, options: { temperature: 0.1, num_predict: 120 } };\nreturn msg;",
         "outputs": 1,
@@ -1509,14 +1576,14 @@
         "y": 100,
         "wires": [
             [
-                "ems_ai_http"
+                "f4bfea709a67969c"
             ]
         ]
     },
     {
-        "id": "ems_ai_http",
+        "id": "f4bfea709a67969c",
         "type": "http request",
-        "z": "ems_ai_tab",
+        "z": "62d821b54313b13f",
         "name": "Ollama gemma3:4b",
         "method": "POST",
         "ret": "obj",
@@ -1530,14 +1597,14 @@
         "y": 100,
         "wires": [
             [
-                "ems_ai_parse"
+                "a556cb758ae887e6"
             ]
         ]
     },
     {
-        "id": "ems_ai_parse",
+        "id": "a556cb758ae887e6",
         "type": "function",
-        "z": "ems_ai_tab",
+        "z": "62d821b54313b13f",
         "name": "Výstup komentáře",
         "func": "const durationMs = Date.now() - (msg.ems_ai_started_at || Date.now());\nconst response = msg.payload && typeof msg.payload.response === 'string' ? msg.payload.response.trim() : '';\nconst model = msg.payload?.model || flow.get('ems_ai_model') || 'gemma3:4b';\nconst eventKey = msg.ems_ai_event?.key || 'unknown';\n\nconst status = {\n    state: response ? 'ok' : 'error',\n    model,\n    duration_ms: durationMs,\n    event_key: eventKey,\n    timestamp: new Date().toISOString(),\n    error: response ? null : 'empty_response'\n};\n\nif (!response) {\n    return [null, { topic: 'ems/ai/status', payload: status, retain: true }, { topic: 'ems/ai/error', payload: JSON.stringify(status), retain: true }];\n}\nreturn [\n    { topic: 'ems/ai/comment', payload: response, retain: true },\n    { topic: 'ems/ai/status', payload: status, retain: true },\n    null\n];",
         "outputs": 3,
@@ -1545,21 +1612,21 @@
         "y": 100,
         "wires": [
             [
-                "ems_ai_comment_mqtt",
-                "ems_ai_debug"
+                "ea49da4b621f46d9",
+                "16a37f6ec22e1d2b"
             ],
             [
-                "ems_ai_status_mqtt"
+                "fdd0820b35b2f2d8"
             ],
             [
-                "ems_ai_error_mqtt"
+                "9502c38a7659f020"
             ]
         ]
     },
     {
-        "id": "ems_ai_debug",
+        "id": "16a37f6ec22e1d2b",
         "type": "debug",
-        "z": "ems_ai_tab",
+        "z": "62d821b54313b13f",
         "name": "EMS AI komentář",
         "active": true,
         "tosidebar": true,
@@ -1571,9 +1638,9 @@
         "wires": []
     },
     {
-        "id": "ems_ai_comment_mqtt",
+        "id": "ea49da4b621f46d9",
         "type": "mqtt out",
-        "z": "ems_ai_tab",
+        "z": "62d821b54313b13f",
         "name": "EMS AI comment MQTT",
         "topic": "",
         "qos": "",
@@ -1589,9 +1656,9 @@
         "wires": []
     },
     {
-        "id": "ems_ai_status_mqtt",
+        "id": "fdd0820b35b2f2d8",
         "type": "mqtt out",
-        "z": "ems_ai_tab",
+        "z": "62d821b54313b13f",
         "name": "EMS AI status MQTT",
         "topic": "",
         "qos": "",
@@ -1607,9 +1674,9 @@
         "wires": []
     },
     {
-        "id": "ems_ai_error_mqtt",
+        "id": "9502c38a7659f020",
         "type": "mqtt out",
-        "z": "ems_ai_tab",
+        "z": "62d821b54313b13f",
         "name": "EMS AI error MQTT",
         "topic": "",
         "qos": "",
@@ -1625,78 +1692,11 @@
         "wires": []
     },
     {
-        "id": "df8eb53ee98e5c5a",
+        "id": "09e6845c888542db",
         "type": "global-config",
         "env": [],
         "modules": {
             "node-red-contrib-home-assistant-websocket": "0.80.3"
         }
-    },
-    {
-        "id": "ems_force_mode_auto_off",
-        "type": "api-call-service",
-        "z": "ems_tab_tasks",
-        "name": "Force task completed -> OFF",
-        "server": "d6487c47.43254",
-        "version": 7,
-        "debugenabled": false,
-        "action": "input_select.select_option",
-        "floorId": [],
-        "areaId": [],
-        "deviceId": [],
-        "entityId": [],
-        "labelId": [],
-        "data": "{\"entity_id\":\"{{payload.entity_id}}\",\"option\":\"{{payload.option}}\"}",
-        "dataType": "json",
-        "mergeContext": "",
-        "mustacheAltTags": false,
-        "outputProperties": [],
-        "queue": "none",
-        "blockInputOverrides": false,
-        "domain": "input_select",
-        "service": "select_option",
-        "x": 760,
-        "y": 360,
-        "wires": [
-            []
-        ]
-    },
-    {
-        "id": "ems_decision_trace_build",
-        "type": "function",
-        "z": "ems_tab_boiler",
-        "name": "publish ems/decision/trace",
-        "func": "const ems = global.get('ems') || {};\nmsg.topic = 'ems/decision/trace';\nmsg.payload = ems.decision_trace || {};\nreturn msg;",
-        "outputs": 1,
-        "timeout": "",
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 760,
-        "y": 260,
-        "wires": [
-            [
-                "ems_decision_trace_mqtt"
-            ]
-        ]
-    },
-    {
-        "id": "ems_decision_trace_mqtt",
-        "type": "mqtt out",
-        "z": "ems_tab_boiler",
-        "name": "MQTT ems/decision/trace",
-        "topic": "",
-        "qos": "0",
-        "retain": "true",
-        "respTopic": "",
-        "contentType": "application/json",
-        "userProps": "",
-        "correl": "",
-        "expiry": "",
-        "broker": "dfd2960398e9d1c1",
-        "x": 1020,
-        "y": 260,
-        "wires": []
     }
 ]
