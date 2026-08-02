@@ -3,119 +3,221 @@ path: ems
 icon: mdi:home-lightning-bolt
 type: sections
 max_columns: 3
+dense_section_placement: false
 sections:
   - type: grid
+    column_span: 3
     cards:
-      - type: heading
-        heading: Živý provoz
       - type: custom:mushroom-template-card
         entity: input_boolean.ems_enabled
         primary: |-
-          {% if is_state('input_boolean.ems_enabled','on') %}
-            EMS běží
+          {% if is_state('input_boolean.ems_enabled', 'on') %}
+            EMS {{ states('sensor.ems_mode') }}
           {% else %}
             EMS vypnuté
           {% endif %}
         secondary: >-
-          {{ states('sensor.ems_mode') }} · {{
-          states('sensor.ems_decision_reason') }}
+          {{ states('sensor.ems_decision_reason') }} · SOC {{
+          states('sensor.ems_battery_soc') | float(0) | round(1) }} % · baterie
+          {{ states('sensor.ems_battery_power') | float(0) | round(0) }} W · FV
+          {{ states('sensor.ems_pv_power') | float(0) | round(0) }} W
         icon: mdi:home-lightning-bolt
         icon_color: >-
-          {% if is_state('input_boolean.ems_enabled','off') %}red {% elif
-          is_state('sensor.ems_mode','READY') %}green {% elif
-          is_state('sensor.ems_mode','PROTECTED') %}orange {% else %}amber{%
-          endif %}
-        layout: horizontal
+          {% if is_state('input_boolean.ems_enabled', 'off') %}red {% elif
+          is_state('sensor.ems_mode', 'PROTECTED') %}orange {% elif
+          is_state('sensor.ems_mode', 'READY') %}green {% else %}amber{% endif
+          %}
         multiline_secondary: true
-        grid_options:
-          columns: 12
-          rows: auto
+        layout: horizontal
+        tap_action:
+          action: more-info
+      - type: custom:mushroom-chips-card
+        alignment: center
+        chips:
+          - type: template
+            icon: mdi:battery
+            content: SOC {{ states('sensor.ems_battery_soc') | float(0) | round(1) }} %
+            icon_color: green
+          - type: template
+            icon: mdi:target
+            content: >-
+              Cíl {{ states('sensor.ems_battery_target_soc') | float(0) |
+              round(0) }} %
+            icon_color: blue
+          - type: template
+            icon: mdi:battery-lock
+            content: >-
+              Min {{ states('sensor.ems_battery_effective_minimum_soc') |
+              float(0) | round(0) }} %
+            icon_color: amber
+          - type: template
+            icon: mdi:solar-power
+            content: >-
+              {{ (states('sensor.ems_pv_power') | float(0) / 1000) | round(1) }}
+              kW
+            icon_color: amber
+          - type: template
+            icon: mdi:home-lightning-bolt
+            content: >-
+              {{ (states('sensor.ems_house_load_total') | float(0) / 1000) |
+              round(1) }} kW
+            icon_color: blue
+          - type: template
+            icon: mdi:transmission-tower
+            content: "{{ states('sensor.ems_dynamic_tariff_class') }}"
+            icon_color: >-
+              {% if is_state('binary_sensor.ems_cheap_grid_usable', 'on')
+              %}blue{% else %}grey{% endif %}
+  - type: grid
+    column_span: 2
+    cards:
+      - type: heading
+        heading: Decision trace
+        icon: mdi:source-branch
+      - type: custom:mushroom-template-card
+        entity: sensor.ems_decision_trace_detailed
+        primary: "{{ states('sensor.ems_decision_trace_detailed') | replace('_', ' ') }}"
+        secondary: >-
+          {% set b = state_attr('sensor.ems_decision_trace_detailed', 'boiler')
+          or {} %} {% set i = state_attr('sensor.ems_decision_trace_detailed',
+          'inputs') or {} %} Důvod: {{ b.get('reason',
+          states('sensor.ems_decision_reason')) | replace('_', ' ') }} · SOC {{
+          i.get('soc', states('sensor.ems_battery_soc')) }} % · battery {{
+          i.get('battery_power_w', states('sensor.ems_battery_power')) }} W
+        icon: mdi:decision-tree
+        icon_color: blue
+        multiline_secondary: true
+        tap_action:
+          action: more-info
+      - type: markdown
+        content: >-
+          {% set b = state_attr('sensor.ems_decision_trace_detailed', 'boiler')
+          or {} %} {% set checks = b.get('checks', []) %} {% if checks %} ###
+          Vyhodnocení podmínek {% for c in checks %} {{ '✅' if c.result else '❌'
+          }} `{{ c.check }}`   {% endfor %} {% else %} Detailní trace ještě není
+          k dispozici. {% endif %}
+      - type: custom:mushroom-template-card
+        primary: High-SOC load režim
+        secondary: |-
+          {% if is_state('sensor.ems_high_soc_load_state', 'allowed') %}
+            Povolen · zátěže mohou běžet bez čekání na dlouhý stabilní přebytek.
+          {% else %}
+            Nepovolen · platí běžná konzervativní logika.
+          {% endif %}
+        icon: mdi:battery-arrow-up
+        icon_color: >-
+          {% if is_state('sensor.ems_high_soc_load_state', 'allowed') %}green{%
+          else %}grey{% endif %}
+        multiline_secondary: true
+  - type: grid
+    cards:
+      - type: heading
+        heading: Aktivní rozhodnutí
+        icon: mdi:state-machine
+      - type: custom:mushroom-template-card
+        primary: Wallbox
+        secondary: >-
+          Zdroj {{ states('sensor.ems_wallbox_source') }} · důvod {{
+          states('sensor.ems_wallbox_reason') }} · proud {{
+          states('sensor.ems_wallbox_current') }} A · {{
+          states('sensor.ems_wallbox_task_summary') }}
+        icon: mdi:ev-station
+        icon_color: >-
+          {% if is_state('binary_sensor.ems_wallbox_allowed', 'on') %}green{%
+          else %}grey{% endif %}
+        multiline_secondary: true
+      - type: custom:mushroom-template-card
+        primary: Baterie ze sítě
+        secondary: >-
+          {{ states('sensor.ems_battery_charge_reason') }} · proud {{
+          states('sensor.ems_battery_charge_current') }} A · plán {{
+          states('sensor.ems_grid_purchase_summary') }}
+        icon: mdi:battery-charging
+        multiline_secondary: true
+        color: >-
+          {% if is_state('binary_sensor.ems_battery_grid_charge_allowed', 'on')
+          %}blue{% else %}grey{% endif %}
+        features_position: bottom
+        tap_action:
+          action: more-info
+        entity: sensor.ems_grid_purchase_summary
+      - type: custom:mushroom-template-card
+        primary: Dispatcher
+        secondary: >-
+          Poslední akce {{ states('sensor.ems_dispatcher_last_action') }} ·
+          změna {{ states('sensor.ems_dispatcher_last_change') }}
+        icon: mdi:play-network
+        icon_color: blue
+        multiline_secondary: true
+  - type: grid
+    cards:
+      - type: heading
+        heading: Bojlery
+        icon: mdi:water-boiler
       - type: grid
         columns: 2
         square: false
         cards:
           - type: custom:mushroom-template-card
-            primary: Baterie domu
+            primary: Spodní bojler
             secondary: >-
-              {{ states('sensor.ems_battery_soc')|float(0)|round(1) }} % · cíl
-              {{ states('sensor.ems_battery_target_soc')|float(0)|round(0) }} %
-              · min {{
-              states('sensor.ems_battery_effective_minimum_soc')|float(0)|round(0)
-              }} %
-            icon: mdi:battery
+              Horní {{ states('sensor.ems_bottom_boiler_top_temp') | float(0) |
+              round(1) }} °C · spodní {{
+              states('sensor.ems_bottom_boiler_bottom_temp') | float(0) |
+              round(1) }} °C · {{
+              states('sensor.ems_spodni_bojler_force_progress') }}
+            icon: mdi:water-boiler
             icon_color: >-
-              {% set soc = states('sensor.ems_battery_soc')|float(0) %} {% set
-              min = states('sensor.ems_battery_effective_minimum_soc')|float(50)
-              %} {% set target =
-              states('sensor.ems_battery_target_soc')|float(60) %} {% if soc <=
-              min %}red{% elif soc < target %}amber{% else %}green{% endif %}
+              {% if is_state('binary_sensor.ems_bottom_boiler_allowed', 'on')
+              %}green{% else %}grey{% endif %}
             multiline_secondary: true
           - type: custom:mushroom-template-card
-            primary: Tok baterie
+            primary: Pergola bojler
             secondary: >-
-              {% set bp = states('sensor.ems_battery_power')|float(0) %} {% if
-              bp > 300 %}nabíjí {{ (bp/1000)|round(1) }} kW {% elif bp < -300
-              %}vybíjí {{ ((bp*-1)/1000)|round(1) }} kW {% else %}skoro stojí{%
-              endif %}
-            icon: mdi:swap-horizontal-bold
+              {{ states('sensor.ems_pergola_boiler_temp') | float(0) | round(1)
+              }} °C · {{ states('sensor.ems_pergola_bojler_force_progress') }}
+            icon: mdi:water-boiler
             icon_color: >-
-              {% set bp = states('sensor.ems_battery_power')|float(0) %} {% if
-              bp > 300 %}green{% elif bp < -2000 %}red{% elif bp < -300
-              %}amber{% else %}grey{% endif %}
-          - type: custom:mushroom-template-card
-            primary: Fotovoltaika
-            secondary: >-
-              FV {{ (states('sensor.ems_pv_power')|float(0)/1000)|round(1) }} kW
-              · dnes zbývá {{
-              states('sensor.ems_forecast_remaining_today')|float(0)|round(1) }}
-              kWh · zítra {{
-              states('sensor.ems_forecast_tomorrow')|float(0)|round(1) }} kWh
-            icon: mdi:solar-power
-            icon_color: >-
-              {% set pv = states('sensor.ems_pv_power')|float(0) %} {% if pv >
-              3000 %}yellow{% elif pv > 500 %}amber{% else %}grey{% endif %}
+              {% if is_state('binary_sensor.ems_pergola_boiler_allowed', 'on')
+              %}green{% else %}grey{% endif %}
             multiline_secondary: true
-          - type: custom:mushroom-template-card
-            primary: Síť / HDO
-            secondary: >-
-              {{ states('sensor.ems_dynamic_tariff_class') }} · {{
-              states('sensor.tman_parc_c_44_17_267_21_tman_stav_hdo')|default('HDO
-              ?', true) }} · síť {{
-              states('sensor.ems_grid_power_total')|float(0)|round(0) }} W
-            icon: mdi:transmission-tower
-            icon_color: >-
-              {% if is_state('binary_sensor.ems_cheap_grid_usable','on')
-              %}blue{% else %}grey{% endif %}
-      - type: custom:mushroom-template-card
-        primary: Plán nákupu energie
-        secondary: "{{ states('sensor.ems_grid_purchase_summary') }}"
-        icon: mdi:calendar-clock
-        icon_color: >-
-          {% set s = states('sensor.ems_grid_purchase_status') %} {% if s ==
-          'planned' %}blue{% elif s == 'partial' %}amber{% elif s == 'waiting'
-          %}orange{% else %}grey{% endif %}
-        multiline_secondary: true
-        grid_options:
-          columns: 12
-          rows: auto
+      - type: entities
+        title: Force režimy boilerů
+        show_header_toggle: false
+        entities:
+          - entity: input_select.ems_boiler_mode
+            name: Globální režim
+          - type: divider
+          - entity: input_select.ems_bottom_boiler_force_mode
+            name: Spodní force režim
+          - entity: input_select.ems_bottom_boiler_force_goal
+            name: Spodní cíl
+          - entity: input_number.ems_bottom_boiler_force_power_w
+            name: Spodní výkon
+          - entity: input_number.ems_bottom_boiler_force_target_temp
+            name: Spodní cílová teplota
+          - entity: input_number.ems_bottom_boiler_force_minutes
+            name: Spodní čas
+          - entity: input_number.ems_bottom_boiler_force_energy_kwh
+            name: Spodní energie
+          - type: divider
+          - entity: input_select.ems_pergola_boiler_force_mode
+            name: Pergola force režim
+          - entity: input_select.ems_pergola_boiler_force_goal
+            name: Pergola cíl
+          - entity: input_number.ems_pergola_boiler_force_power_w
+            name: Pergola výkon
+          - entity: input_number.ems_pergola_boiler_force_target_temp
+            name: Pergola cílová teplota
+          - entity: input_number.ems_pergola_boiler_force_minutes
+            name: Pergola čas
+          - entity: input_number.ems_pergola_boiler_force_energy_kwh
+            name: Pergola energie
+  - type: grid
+    cards:
       - type: heading
         heading: Wallboxy
-      - type: custom:mushroom-template-card
-        primary: Wallbox
-        secondary: >-
-          {{ states('sensor.ems_wallbox_source') }} · {{
-          states('sensor.ems_wallbox_reason') }} · {{
-          states('sensor.ems_wallbox_current') }} A · {{
-          states('sensor.ems_wallbox_task_summary') }}
         icon: mdi:ev-station
-        icon_color: >-
-          {% if is_state('binary_sensor.ems_wallbox_grid_transfer','on') %}blue
-          {% elif is_state('binary_sensor.ems_wallbox_allowed','on') %}green {%
-          else %}grey{% endif %}
-        multiline_secondary: true
-        grid_options:
-          columns: 12
-          rows: auto
       - type: grid
         columns: 2
         square: false
@@ -123,40 +225,42 @@ sections:
           - type: custom:mushroom-template-card
             primary: ID.3
             secondary: >-
-              {% if is_state('binary_sensor.ems_id3_wallbox_connected','on')
+              {% if is_state('binary_sensor.ems_id3_wallbox_connected', 'on')
               %}připojeno{% else %}odpojeno{% endif %} · SOC {{
-              states('sensor.auto_id4_sniffer_id3_soc_bms')|float(0)|round(0) }}
-              % · chybí {{
-              states('sensor.ems_id3_required_kwh')|float(0)|round(1) }} kWh ·
-              cíl {{ states('input_number.ems_id3_target_soc')|float(0)|round(0)
-              }} %
+              states('sensor.auto_id4_sniffer_id3_soc_bms') | float(0) |
+              round(0) }} % · chybí {{ states('sensor.ems_id3_required_kwh') |
+              float(0) | round(1) }} kWh · {{
+              states('sensor.ems_id3_wallbox_force_progress') }}
             icon: mdi:car-electric
-            multiline_secondary: true
-            color: >-
-              {% if is_state('binary_sensor.ems_id3_wallbox_connected','on')
+            icon_color: >-
+              {% if is_state('binary_sensor.ems_id3_wallbox_connected', 'on')
               %}green{% else %}grey{% endif %}
-            features_position: bottom
+            multiline_secondary: true
           - type: custom:mushroom-template-card
             primary: ID.4
             secondary: >-
-              {% if is_state('binary_sensor.ems_id4_wallbox_connected','on')
+              {% if is_state('binary_sensor.ems_id4_wallbox_connected', 'on')
               %}připojeno{% else %}odpojeno{% endif %} · SOC {{
-              states('sensor.auto_id4_sniffer_id4_soc_bms')|float(0)|round(0) }}
-              % · chybí {{
-              states('sensor.ems_id4_required_kwh')|float(0)|round(1) }} kWh ·
-              cíl {{ states('input_number.ems_id4_target_soc')|float(0)|round(0)
-              }} %
+              states('sensor.auto_id4_sniffer_id4_soc_bms') | float(0) |
+              round(0) }} % · chybí {{ states('sensor.ems_id4_required_kwh') |
+              float(0) | round(1) }} kWh · {{
+              states('sensor.ems_id4_wallbox_force_progress') }}
             icon: mdi:car-electric
-            multiline_secondary: true
-            color: >-
-              {% if is_state('binary_sensor.ems_id4_wallbox_connected','on')
+            icon_color: >-
+              {% if is_state('binary_sensor.ems_id4_wallbox_connected', 'on')
               %}green{% else %}grey{% endif %}
-            features_position: bottom
+            multiline_secondary: true
       - type: entities
-        title: Force nabíjení aut
+        title: Force režimy aut
+        show_header_toggle: false
         entities:
+          - entity: input_select.ems_wallbox_mode
+            name: Globální režim
+          - entity: input_select.ems_wallbox_priority
+            name: Priorita
+          - type: divider
           - entity: input_select.ems_id3_wallbox_force_mode
-            name: ID.3 režim
+            name: ID.3 force režim
           - entity: input_select.ems_id3_wallbox_force_goal
             name: ID.3 cíl
           - entity: input_number.ems_id3_wallbox_force_target_soc
@@ -167,11 +271,9 @@ sections:
             name: ID.3 energie
           - entity: input_number.ems_id3_wallbox_force_minutes
             name: ID.3 čas
-          - entity: sensor.ems_id3_wallbox_force_progress
-            name: ID.3 průběh
           - type: divider
           - entity: input_select.ems_id4_wallbox_force_mode
-            name: ID.4 režim
+            name: ID.4 force režim
           - entity: input_select.ems_id4_wallbox_force_goal
             name: ID.4 cíl
           - entity: input_number.ems_id4_wallbox_force_target_soc
@@ -182,114 +284,64 @@ sections:
             name: ID.4 energie
           - entity: input_number.ems_id4_wallbox_force_minutes
             name: ID.4 čas
-          - entity: sensor.ems_id4_wallbox_force_progress
-            name: ID.4 průběh
-      - type: entities
-        title: Ovládání aut
-        entities:
-          - input_select.ems_wallbox_mode
-          - input_select.ems_wallbox_priority
-          - input_number.ems_id3_target_soc
-          - input_boolean.ems_id3_use_departure_time
-          - input_datetime.ems_id3_departure
-          - input_number.ems_id4_target_soc
-          - input_boolean.ems_id4_use_departure_time
-          - input_datetime.ems_id4_departure
   - type: grid
     cards:
       - type: heading
-        heading: Baterie, ochrany a voda
-      - type: custom:mushroom-template-card
-        primary: Údržba baterie
-        secondary: >-
-          {{ states('sensor.ems_battery_balance_status') }} · {{
-          states('sensor.ems_battery_balance_reason') }} · napětí {{
-          states('sensor.ems_battery_balance_voltage')|float(0)|round(2) }} V ·
-          drženo {{
-          states('sensor.ems_battery_balance_hold_minutes_done')|float(0)|round(0)
-          }} / {{
-          states('input_number.ems_balance_hold_minutes')|float(30)|round(0) }}
-          min · poslední {{ states('sensor.ems_battery_last_balance') }} · {{
-          states('sensor.ems_battery_days_since_balance')|float(999)|round(0) }}
-          dnů
+        heading: Baterie a task manager
         icon: mdi:battery-sync
-        icon_color: >-
-          {% set s = states('sensor.ems_battery_balance_status')|lower %} {% if
-          'vybalanc' in s or 'balanced' in s %}green{% elif 'prob' in s or
-          'balanc' in s %}blue{% elif 'due' in s or 'naplán' in s %}amber{% else
-          %}grey{% endif %}
-        multiline_secondary: true
-        grid_options:
-          columns: 12
-          rows: auto
       - type: custom:mushroom-template-card
         primary: "{{ states('sensor.ems_battery_task_summary') }}"
         secondary: >-
-          Stav: {{ states('sensor.ems_battery_task_status') }} · důvod: {{
+          Stav {{ states('sensor.ems_battery_task_status') }} · důvod {{
           states('sensor.ems_battery_task_reason') }} · proud {{
-          states('sensor.ems_battery_task_current')|float(0)|round(0) }} A ·
-          cooldown {{ states('sensor.ems_battery_task_cooldown') }}
+          states('sensor.ems_battery_task_current') }} A · cooldown {{
+          states('sensor.ems_battery_task_cooldown') }}
         icon: mdi:clipboard-pulse
-        icon_color: >-
-          {% set st = states('sensor.ems_battery_task_status')|lower %} {% if
-          'prob' in st or 'running' in st or 'drží' in st or 'holding' in st
-          %}blue {% elif 'ček' in st or 'pending' in st %}amber {% elif 'dokon'
-          in st or 'completed' in st %}green {% else %}grey{% endif %}
         multiline_secondary: true
-        grid_options:
-          columns: 12
-          rows: auto
-      - type: grid
-        columns: 2
-        square: false
-        cards:
-          - type: custom:mushroom-template-card
-            primary: AC-in ochrana
-            secondary: >-
-              {{ states('sensor.ems_ac_in_status') }} · {{
-              states('sensor.ems_ac_in_reason') }} · {{
-              states('sensor.ems_ac_in_battery_voltage')|float(0)|round(2) }} V
-            icon: mdi:electric-switch
-            icon_color: >-
-              {% if is_state('binary_sensor.ems_ac_in_desired_on','on') %}blue{%
-              else %}grey{% endif %}
-            multiline_secondary: true
-          - type: custom:mushroom-template-card
-            primary: Nouzové dobití
-            secondary: >-
-              {{ states('sensor.ems_emergency_charge_status') }} · {{
-              states('sensor.ems_emergency_charge_reason') }} · zap pod {{
-              states('input_number.ems_emergency_charge_below_v')|float(0)|round(1)
-              }} V · vyp nad {{
-              states('input_number.ems_emergency_charge_recover_above_v')|float(0)|round(1)
-              }} V
-            icon: mdi:battery-alert
-            icon_color: >-
-              {% if is_state('binary_sensor.ems_emergency_charge_active','on')
-              %}red{% else %}green{% endif %}
-            multiline_secondary: true
+        color: >-
+          {% if is_state('binary_sensor.ems_battery_task_status', 'on') %}blue
+          {% elif is_state('binary_sensor.ems_battery_task_pending', 'on')
+          %}amber {% elif is_state('sensor.ems_battery_task_status',
+          'Dokončeno') %}green {% else %}grey{% endif %}
+        features_position: bottom
+      - type: custom:mushroom-template-card
+        primary: Údržba baterie
+        icon: mdi:battery-sync
+        multiline_secondary: true
+        secondary: >-
+          {% set status = states('sensor.ems_battery_balance_stav') -%} {% set
+          reason = states('sensor.ems_battery_balance_reason') -%} {% set
+          voltage = states('sensor.ems_battery_balance_napeti') | float(0) -%}
+          {% set hold = states('sensor.ems_battery_balance_hold') | int(0) -%}
+          {% set last = states('sensor.ems_battery_last_balance') -%}
+
+          {{ status }} {%- if reason not in ['unknown', 'unavailable', ''] %} ·
+          {{ reason }}  {%- endif %} · {{ voltage | round(1) }} V · drženo {{
+          hold }} min {%- if last not in ['unknown', 'unavailable', ''] %}
+            {%- set dt = as_local(as_datetime(last)) %}
+            {%- set today = now().date() %}
+            {%- if dt.date() == today %}
+            · dnes {{ dt.strftime('%H:%M') }}
+            {%- elif (today - dt.date()).days == 1 %}
+            · včera {{ dt.strftime('%H:%M') }}
+            {%- else %}
+            · {{ dt.strftime('%d.%m.%Y %H:%M') }}
+            {%- endif %}
+          {%- endif %}
+        color: blue
+        features_position: bottom
       - type: entities
-        title: Ovládání AC-in ochrany
-        entities:
-          - input_boolean.ems_ac_in_manager_enabled
-          - input_select.ems_ac_in_mode
-          - input_number.ems_ac_in_connect_below_v
-          - input_number.ems_ac_in_disconnect_above_v
-          - input_number.ems_ac_in_min_switch_interval_min
-          - input_boolean.ems_emergency_battery_charge_enabled
-          - input_number.ems_emergency_charge_below_v
-          - input_number.ems_emergency_charge_recover_above_v
-          - input_number.ems_emergency_charge_current_a
-          - sensor.ems_battery_voltage
-          - sensor.ems_battery_voltage_source
-      - type: entities
-        title: Force baterie / balanc
+        title: Bateriové tasky
+        show_header_toggle: false
         entities:
           - input_select.ems_force_battery_charge_mode
           - input_number.ems_force_battery_target_soc
           - input_number.ems_force_battery_current_a
+          - type: divider
           - input_select.ems_force_battery_balance_mode
           - input_number.ems_force_battery_balance_current_a
+          - type: divider
+          - input_boolean.ems_weekly_battery_balance_enabled
           - input_select.ems_weekly_battery_balance_mode
           - input_select.ems_weekly_battery_balance_day
           - input_number.ems_weekly_battery_balance_current_a
@@ -298,174 +350,99 @@ sections:
           - input_number.ems_balance_due_days
           - input_number.ems_balance_solar_start_hour
           - input_number.ems_balance_solar_end_hour
-      - type: heading
-        heading: Bojlery
-      - type: grid
-        columns: 2
-        square: false
-        cards:
-          - type: custom:mushroom-template-card
-            primary: Spodní bojler
-            secondary: >-
-              nahoře {{
-              states('sensor.ems_bottom_boiler_top_temp')|float(0)|round(0) }}
-              °C · dole {{
-              states('sensor.ems_bottom_boiler_bottom_temp')|float(0)|round(0)
-              }} °C · {% if
-              is_state('binary_sensor.ems_bottom_boiler_allowed','on') %}topí{%
-              else %}stojí{% endif %}
-            icon: mdi:water-boiler
-            icon_color: >-
-              {% if is_state('binary_sensor.ems_bottom_boiler_allowed','on')
-              %}orange{% else %}grey{% endif %}
-            multiline_secondary: true
-          - type: custom:mushroom-template-card
-            primary: Pergola bojler
-            secondary: >-
-              {{ states('sensor.ems_pergola_boiler_temp')|float(0)|round(0) }}
-              °C · {% if
-              is_state('binary_sensor.ems_pergola_boiler_allowed','on') %}topí{%
-              else %}stojí{% endif %}
-            icon: mdi:water-boiler
-            icon_color: >-
-              {% if is_state('binary_sensor.ems_pergola_boiler_allowed','on')
-              %}orange{% else %}grey{% endif %}
-      - type: entities
-        title: Ovládání bojlerů
-        entities:
-          - input_select.ems_boiler_mode
-          - input_select.ems_bottom_boiler_wood_plan
-          - input_boolean.ems_wood_boiler_heating_bottom_boiler
-          - binary_sensor.ems_bottom_boiler_allowed
-          - binary_sensor.ems_pergola_boiler_allowed
-      - type: entities
-        title: Spodní bojler Force
-        entities:
-          - entity: input_select.ems_bottom_boiler_force_mode
-          - entity: input_select.ems_bottom_boiler_force_goal
-          - entity: input_number.ems_bottom_boiler_force_power_w
-          - entity: input_number.ems_bottom_boiler_force_target_temp
-          - entity: input_number.ems_bottom_boiler_force_minutes
-          - entity: input_number.ems_bottom_boiler_force_energy_kwh
-          - entity: sensor.ems_spodni_bojler_force_progress
-      - type: entities
-        title: Pergola bojler Force
-        entities:
-          - entity: input_select.ems_pergola_boiler_force_mode
-          - entity: input_select.ems_pergola_boiler_force_goal
-          - entity: input_number.ems_pergola_boiler_force_power_w
-          - entity: input_number.ems_pergola_boiler_force_target_temp
-          - entity: input_number.ems_pergola_boiler_force_minutes
-          - entity: input_number.ems_pergola_boiler_force_energy_kwh
-          - entity: sensor.ems_pergola_bojler_force_progress
   - type: grid
     cards:
       - type: heading
-        heading: Diagnostika, důvody a náklady
+        heading: Ochrany
+        icon: mdi:shield-home
       - type: custom:mushroom-template-card
-        primary: Proč se to tak chová
+        primary: AC-in ochrana
         secondary: >-
-          Wallbox: {{ states('sensor.ems_wallbox_reason') }} · Bojler: {{
-          states('sensor.ems_boiler_reason') if
-          states('sensor.ems_boiler_reason') not in ['unknown','unavailable']
-          else states('sensor.ems_decision_trace') }} · Baterka: {{
-          states('sensor.ems_battery_charge_reason') }}
-        icon: mdi:help-rhombus
-        icon_color: purple
+          {{ states('sensor.ems_ac_in_stav') }} · {{
+          states('sensor.ems_ac_in_duvod') }} · {{
+          states('sensor.ems_ac_in_napeti_baterie') | float(0) | round(2) }} V
+        icon: mdi:electric-switch
+        icon_color: >-
+          {% if is_state('binary_sensor.ems_ac_in_pripnuto', 'on') %}blue{% else
+          %}grey{% endif %}
         multiline_secondary: true
-        grid_options:
-          columns: 12
-          rows: auto
       - type: custom:mushroom-template-card
-        primary: Dispatcher
+        primary: Nouzové dobití
         secondary: >-
-          Poslední akce: {{ states('sensor.ems_dispatcher_last_action') }} ·
-          změna {{ states('sensor.ems_dispatcher_last_change') }} · trace {{
-          states('sensor.ems_decision_trace') }}
-        icon: mdi:source-branch
-        icon_color: blue
+          {{ states('sensor.ems_nouzove_nabijeni_stav') }} · {{
+          states('sensor.ems_nouzove_nabijeni_duvod') }}
+        icon: mdi:battery-alert
+        icon_color: >-
+          {% if is_state('binary_sensor.ems_nouzove_nabijeni_aktivni', 'on')
+          %}red{% else %}green{% endif %}
         multiline_secondary: true
-        grid_options:
-          columns: 12
-          rows: auto
-      - type: grid
-        columns: 2
-        square: false
+      - type: entities
+        title: Nastavení ochran
+        show_header_toggle: false
+        entities:
+          - input_boolean.ems_ac_in_manager_enabled
+          - input_select.ems_ac_in_mode
+          - input_number.ems_ac_in_connect_below_v
+          - input_number.ems_ac_in_disconnect_above_v
+          - input_number.ems_ac_in_min_switch_interval_min
+          - type: divider
+          - input_boolean.ems_emergency_battery_charge_enabled
+          - input_number.ems_emergency_charge_below_v
+          - input_number.ems_emergency_charge_recover_above_v
+          - input_number.ems_emergency_charge_current_a
+          - type: divider
+          - input_number.ems_battery_hard_min_soc
+          - input_number.ems_high_soc_load_threshold
+          - input_number.ems_full_soc_load_threshold
+          - input_number.ems_solar_load_support_hard_limit_w
+  - type: grid
+    column_span: 3
+    cards:
+      - type: heading
+        heading: Diagnostika
+        icon: mdi:chart-timeline-variant-shimmer
+      - type: vertical-stack
         cards:
-          - type: custom:mushroom-template-card
-            primary: ID.3 ze sítě
-            secondary: >-
-              {{ states('sensor.ems_id3_energie_ze_site')|float(0)|round(3) }}
-              kWh · {{
-              states('sensor.ems_id3_cena_energie_ze_site')|float(0)|round(2) }}
-              Kč
-            icon: mdi:car-electric
-            icon_color: >-
-              {% if states('sensor.ems_id3_energie_ze_site')|float(0) > 0
-              %}blue{% else %}grey{% endif %}
-          - type: custom:mushroom-template-card
-            primary: ID.4 ze sítě
-            secondary: >-
-              {{ states('sensor.ems_id4_energie_ze_site')|float(0)|round(3) }}
-              kWh · {{
-              states('sensor.ems_id4_cena_energie_ze_site')|float(0)|round(2) }}
-              Kč
-            icon: mdi:car-electric
-            icon_color: >-
-              {% if states('sensor.ems_id4_energie_ze_site')|float(0) > 0
-              %}blue{% else %}grey{% endif %}
-      - type: entities
-        title: Diagnostika rozhodování
+          - square: false
+            type: grid
+            columns: 2
+            cards:
+              - type: entity
+                entity: sensor.ems_grid_purchase_status
+                name: Nákup energie
+              - type: entity
+                entity: sensor.ems_task_aktivni_baterie
+                name: Primární task
+            grid_options:
+              rows: 1
+          - square: false
+            type: grid
+            columns: 2
+            cards:
+              - type: entity
+                entity: sensor.ems_task_wallbox_primary
+                name: Primární wallbox
+              - type: entity
+                entity: sensor.ems_decision_reason
+                name: Hlavní důvod
+            grid_options:
+              rows: 1
+        grid_options:
+          columns: 12
+          rows: auto
+      - type: history-graph
+        title: Baterie a FV
+        hours_to_show: 12
         entities:
-          - entity: sensor.ems_decision_trace
-          - entity: sensor.ems_dispatcher_last_action
-          - entity: sensor.ems_dispatcher_last_change
-          - entity: sensor.ems_battery_charge_reason
-          - entity: sensor.ems_battery_charge_current
-          - entity: binary_sensor.ems_battery_grid_charge_allowed
-          - entity: sensor.ems_wallbox_reason
-          - entity: sensor.ems_wallbox_source
-          - entity: sensor.ems_wallbox_current
-          - entity: sensor.ems_wallbox_task_summary
-          - entity: sensor.ems_task_wallbox_primary
-          - entity: sensor.ems_battery_task_status
-          - entity: sensor.ems_battery_task_reason
-          - entity: sensor.ems_battery_task_progress
-          - entity: sensor.ems_battery_balance_stav
-          - entity: sensor.ems_battery_balance_reason
-          - entity: sensor.ems_battery_last_balance
-          - entity: sensor.ems_battery_days_since_balance
-      - type: entities
-        title: Forecast / nákup / výkon
-        entities:
-          - sensor.ems_forecast_day_type_tomorrow
-          - sensor.ems_forecast_tomorrow
-          - sensor.ems_forecast_remaining_today
-          - sensor.ems_available_l1
-          - sensor.ems_available_l2
-          - sensor.ems_available_l3
-          - sensor.ems_grid_purchase_needed_kwh
-          - sensor.ems_grid_purchase_planned_kwh
-          - sensor.ems_grid_purchase_status
-          - sensor.ems_grid_purchase_summary
-      - type: entities
-        title: Náklady aut
-        entities:
-          - sensor.tman_parc_c_44_17_267_21_tman_aktualni_cena
-          - sensor.ems_id3_energie_ze_site
-          - sensor.ems_id3_cena_energie_ze_site
-          - sensor.ems_id4_energie_ze_site
-          - sensor.ems_id4_cena_energie_ze_site
-      - type: entities
-        title: Režimy EMS
-        entities:
-          - input_boolean.ems_enabled
-          - input_boolean.ems_winter_mode
-          - input_boolean.ems_allow_grid_charge
-          - input_boolean.ems_allow_solar_loads
-          - input_select.ems_battery_grid_mode
-          - input_boolean.ems_live_wallbox
-          - input_boolean.ems_live_battery_grid
-          - input_boolean.ems_live_boiler
-          - input_boolean.ems_live_notifications
+          - entity: sensor.ems_battery_soc
+            name: SOC
+          - entity: sensor.ems_battery_power
+            name: Výkon baterie
+          - entity: sensor.ems_pv_power
+            name: FV výkon
+      - type: markdown
+        title: AI komentář
+        content: >-
+          {{ states('sensor.ems_ai_komentar') | default('Bez komentáře.', true)
+          }}
 cards: []
