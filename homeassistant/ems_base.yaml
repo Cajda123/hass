@@ -58,6 +58,31 @@ input_boolean:
     name: EMS nouzové dobití baterie povoleno
     icon: mdi:battery-alert
 
+
+  ems_persist_lock_initialized:
+    name: EMS persistence zámku inicializována
+    icon: mdi:database-check
+
+  ems_persist_battery_load_lock:
+    name: EMS persistentní zámek bateriových zátěží
+    icon: mdi:battery-lock
+
+  ems_persist_task_initialized:
+    name: EMS persistence úkolů inicializována
+    icon: mdi:database-check
+
+  ems_persist_cost_initialized:
+    name: EMS persistence cen aut inicializována
+    icon: mdi:database-check
+
+  ems_persist_safety_initialized:
+    name: EMS persistence bezpečnosti inicializována
+    icon: mdi:database-check
+
+  ems_persist_safety_emergency_active:
+    name: EMS persistentní nouzové dobíjení aktivní
+    icon: mdi:battery-alert
+
 input_select:
   ems_wallbox_mode:
     name: EMS wallbox režim
@@ -186,6 +211,18 @@ input_select:
     icon: mdi:target
     options: [TEMP, TIME, ENERGY, NT_END]
     initial: TEMP
+
+
+input_text:
+  ems_persist_battery_load_lock_reason:
+    name: EMS persistentní důvod zámku baterie
+    max: 255
+    icon: mdi:text-box-lock
+
+  ems_persist_battery_cooldown_key:
+    name: EMS persistentní klíč cooldownu baterie
+    max: 255
+    icon: mdi:content-save-clock
 
 input_datetime:
   ems_id3_departure:
@@ -431,7 +468,7 @@ input_number:
     step: 10
     unit_of_measurement: "%"
     icon: mdi:car-electric
-    initial: 50
+    initial: 80
 
   ems_id4_target_soc:
     name: EMS ID.4 cílové SOC
@@ -440,7 +477,7 @@ input_number:
     step: 10
     unit_of_measurement: "%"
     icon: mdi:car-electric
-    initial: 50
+    initial: 80
 
 
   ems_id3_wallbox_force_target_soc:
@@ -559,7 +596,7 @@ input_number:
     step: 0.1
     unit_of_measurement: V
     icon: mdi:sine-wave
-    initial: 56
+    initial: 55
 
   ems_balance_hold_minutes:
     name: EMS balanc držet nad prahem
@@ -568,7 +605,7 @@ input_number:
     step: 5
     unit_of_measurement: min
     icon: mdi:timer-check
-    initial: 30
+    initial: 15
 
   ems_balance_due_days:
     name: EMS balanc po dnech
@@ -577,7 +614,7 @@ input_number:
     step: 1
     unit_of_measurement: d
     icon: mdi:calendar-clock
-    initial: 7
+    initial: 21
 
   ems_balance_solar_start_hour:
     name: EMS balanc FV pokus od hodiny
@@ -585,7 +622,7 @@ input_number:
     max: 23
     step: 1
     icon: mdi:weather-sunny
-    initial: 9
+    initial: 7
 
   ems_balance_solar_end_hour:
     name: EMS balanc FV pokus do hodiny
@@ -593,7 +630,7 @@ input_number:
     max: 23
     step: 1
     icon: mdi:weather-sunny-off
-    initial: 17
+    initial: 20
 
   ems_bottom_boiler_force_power_w:
     name: EMS spodní bojler Force výkon
@@ -722,6 +759,93 @@ input_number:
     unit_of_measurement: W
     icon: mdi:battery-arrow-down-outline
     initial: 300
+
+
+  ems_persist_battery_load_lock_since_ts:
+    name: EMS persistentní zámek baterie od
+    min: 0
+    max: 4102444800
+    step: 1
+    mode: box
+    icon: mdi:clock-lock
+
+  ems_persist_last_balance_ts:
+    name: EMS persistentní čas posledního balancování
+    min: 0
+    max: 4102444800
+    step: 1
+    mode: box
+    icon: mdi:battery-sync
+
+  ems_persist_last_balance_voltage:
+    name: EMS persistentní napětí posledního balancování
+    min: 0
+    max: 70
+    step: 0.01
+    mode: box
+    unit_of_measurement: V
+    icon: mdi:battery-sync
+
+  ems_persist_last_balance_hold_minutes:
+    name: EMS persistentní délka posledního balancování
+    min: 0
+    max: 600
+    step: 0.1
+    mode: box
+    unit_of_measurement: min
+    icon: mdi:timer-check
+
+  ems_persist_battery_cooldown_until_ts:
+    name: EMS persistentní cooldown baterie do
+    min: 0
+    max: 4102444800
+    step: 1
+    mode: box
+    icon: mdi:clock-end
+
+  ems_persist_id3_grid_energy_kwh:
+    name: EMS persistentní ID.3 energie ze sítě
+    min: 0
+    max: 100000
+    step: 0.001
+    mode: box
+    unit_of_measurement: kWh
+    icon: mdi:car-electric
+
+  ems_persist_id3_grid_cost:
+    name: EMS persistentní ID.3 cena ze sítě
+    min: 0
+    max: 1000000
+    step: 0.01
+    mode: box
+    unit_of_measurement: Kč
+    icon: mdi:cash
+
+  ems_persist_id4_grid_energy_kwh:
+    name: EMS persistentní ID.4 energie ze sítě
+    min: 0
+    max: 100000
+    step: 0.001
+    mode: box
+    unit_of_measurement: kWh
+    icon: mdi:car-electric
+
+  ems_persist_id4_grid_cost:
+    name: EMS persistentní ID.4 cena ze sítě
+    min: 0
+    max: 1000000
+    step: 0.01
+    mode: box
+    unit_of_measurement: Kč
+    icon: mdi:cash
+
+  ems_persist_safety_last_switch_ts:
+    name: EMS persistentní poslední přepnutí AC-in
+    min: 0
+    max: 4102444800
+    step: 1
+    mode: box
+    icon: mdi:transmission-tower
 
 mqtt:
   sensor:
@@ -1442,6 +1566,22 @@ template:
         state: >
           {{ false }}
 
+      - name: EMS Persistence Ready
+        unique_id: ems_persistence_ready
+        icon: mdi:database-check
+        state: >-
+          {{
+            is_state('input_boolean.ems_persist_lock_initialized', 'on')
+            and is_state('input_boolean.ems_persist_task_initialized', 'on')
+            and is_state('input_boolean.ems_persist_cost_initialized', 'on')
+            and is_state('input_boolean.ems_persist_safety_initialized', 'on')
+          }}
+        attributes:
+          battery_lock: "{{ states('input_boolean.ems_persist_lock_initialized') }}"
+          tasks: "{{ states('input_boolean.ems_persist_task_initialized') }}"
+          costs: "{{ states('input_boolean.ems_persist_cost_initialized') }}"
+          safety: "{{ states('input_boolean.ems_persist_safety_initialized') }}"
+
       - name: EMS ID3 Wallbox Connected
         unique_id: ems_id3_wallbox_connected
         icon: mdi:ev-plug-type2
@@ -1943,6 +2083,169 @@ script:
           - service: switch.turn_off
             target:
               entity_id: switch.bojler_pergola_2
+
+
+  ems_persist_battery_load_lock:
+    alias: EMS uložit zámek baterie
+    mode: queued
+    max: 10
+    fields:
+      locked:
+        required: true
+      reason:
+        required: false
+      since_ts:
+        required: true
+    sequence:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ locked | bool }}"
+            sequence:
+              - service: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.ems_persist_battery_load_lock
+        default:
+          - service: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.ems_persist_battery_load_lock
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.ems_persist_battery_load_lock_reason
+        data:
+          value: "{{ reason | default('') }}"
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.ems_persist_battery_load_lock_since_ts
+        data:
+          value: "{{ since_ts | int(0) }}"
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.ems_persist_lock_initialized
+
+  ems_persist_balance_state:
+    alias: EMS uložit stav posledního balancování
+    mode: queued
+    max: 10
+    fields:
+      last_balance_ts:
+        required: true
+      voltage:
+        required: true
+      hold_minutes:
+        required: true
+    sequence:
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.ems_persist_last_balance_ts
+        data:
+          value: "{{ last_balance_ts | int(0) }}"
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.ems_persist_last_balance_voltage
+        data:
+          value: "{{ voltage | float(0) }}"
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.ems_persist_last_balance_hold_minutes
+        data:
+          value: "{{ hold_minutes | float(0) }}"
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.ems_persist_task_initialized
+
+  ems_persist_battery_cooldown:
+    alias: EMS uložit cooldown bateriového úkolu
+    mode: queued
+    max: 10
+    fields:
+      cooldown_until_ts:
+        required: true
+      cooldown_key:
+        required: false
+    sequence:
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.ems_persist_battery_cooldown_until_ts
+        data:
+          value: "{{ cooldown_until_ts | int(0) }}"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.ems_persist_battery_cooldown_key
+        data:
+          value: "{{ cooldown_key | default('') }}"
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.ems_persist_task_initialized
+
+  ems_persist_cost_state:
+    alias: EMS uložit náklady nabíjení aut
+    mode: queued
+    max: 10
+    fields:
+      id3_kwh:
+        required: true
+      id3_cost:
+        required: true
+      id4_kwh:
+        required: true
+      id4_cost:
+        required: true
+    sequence:
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.ems_persist_id3_grid_energy_kwh
+        data:
+          value: "{{ id3_kwh | float(0) }}"
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.ems_persist_id3_grid_cost
+        data:
+          value: "{{ id3_cost | float(0) }}"
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.ems_persist_id4_grid_energy_kwh
+        data:
+          value: "{{ id4_kwh | float(0) }}"
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.ems_persist_id4_grid_cost
+        data:
+          value: "{{ id4_cost | float(0) }}"
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.ems_persist_cost_initialized
+
+  ems_persist_safety_state:
+    alias: EMS uložit bezpečnostní latch
+    mode: queued
+    max: 10
+    fields:
+      emergency_active:
+        required: true
+      last_switch_ts:
+        required: true
+    sequence:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ emergency_active | bool }}"
+            sequence:
+              - service: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.ems_persist_safety_emergency_active
+        default:
+          - service: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.ems_persist_safety_emergency_active
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.ems_persist_safety_last_switch_ts
+        data:
+          value: "{{ last_switch_ts | int(0) }}"
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.ems_persist_safety_initialized
 
 automation:
   - alias: EMS odpověď na dotaz spodní bojler dřevo
