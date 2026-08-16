@@ -104,7 +104,7 @@
         "mergeContext": "",
         "mustacheAltTags": false,
         "outputProperties": [],
-        "queue": "none",
+        "queue": "last",
         "blockInputOverrides": false,
         "domain": "script",
         "service": "ems_persist_battery_load_lock",
@@ -121,7 +121,7 @@
         "addon": true
     },
     {
-        "id": "546e1880f4a221e6",
+        "id": "454705d23ac3e2a7",
         "type": "global-config",
         "env": [],
         "modules": {
