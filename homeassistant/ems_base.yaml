@@ -92,7 +92,6 @@ input_select:
       - SOLAR
       - GRID
       - 'OFF'
-    initial: AUTO
 
   ems_wallbox_priority:
     name: EMS priorita auta
@@ -101,7 +100,6 @@ input_select:
       - AUTO
       - ID3
       - ID4
-    initial: AUTO
 
   ems_battery_grid_mode:
     name: EMS dobíjení baterie ze sítě
@@ -110,13 +108,11 @@ input_select:
       - AUTO
       - FORCE
       - 'OFF'
-    initial: AUTO
 
   ems_ac_in_mode:
     name: EMS AC-in režim měničů
     icon: mdi:electric-switch
     options: ['AUTO', 'FORCE_ON', 'FORCE_OFF']
-    initial: 'AUTO'
 
   ems_boiler_mode:
     name: EMS bojlery režim
@@ -126,7 +122,6 @@ input_select:
       - FORCE_BOTTOM
       - FORCE_PERGOLA
       - 'OFF'
-    initial: AUTO
 
   ems_bottom_boiler_wood_plan:
     name: EMS spodní bojler - plán kotle
@@ -136,7 +131,6 @@ input_select:
       - will_heat
       - will_not_heat
       - minimum_only
-    initial: unknown
 
 
   ems_force_battery_charge_mode:
@@ -155,13 +149,11 @@ input_select:
     name: EMS týdenní balanc - režim
     icon: mdi:calendar-sync
     options: ['OFF', 'FORCE_ANYTIME', 'FORCE_NT_ONLY']
-    initial: FORCE_NT_ONLY
 
   ems_weekly_battery_balance_day:
     name: EMS týdenní balanc - den
     icon: mdi:calendar
     options: [ANY, MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
-    initial: SUNDAY
 
 
   ems_id3_wallbox_force_mode:
@@ -174,7 +166,6 @@ input_select:
     name: EMS ID.3 Force nabíjení - cíl
     icon: mdi:target
     options: ['SOC', 'ENERGY', 'TIME', 'NT_END']
-    initial: 'SOC'
 
   ems_id4_wallbox_force_mode:
     name: EMS ID.4 Force nabíjení - režim
@@ -186,7 +177,6 @@ input_select:
     name: EMS ID.4 Force nabíjení - cíl
     icon: mdi:target
     options: ['SOC', 'ENERGY', 'TIME', 'NT_END']
-    initial: 'SOC'
 
   ems_bottom_boiler_force_mode:
     name: EMS spodní bojler Force - režim
@@ -198,7 +188,6 @@ input_select:
     name: EMS spodní bojler Force - cíl
     icon: mdi:target
     options: [TEMP, TIME, ENERGY, NT_END]
-    initial: TEMP
 
   ems_pergola_boiler_force_mode:
     name: EMS pergola bojler Force - režim
@@ -210,7 +199,6 @@ input_select:
     name: EMS pergola bojler Force - cíl
     icon: mdi:target
     options: [TEMP, TIME, ENERGY, NT_END]
-    initial: TEMP
 
 
 input_text:
@@ -243,7 +231,6 @@ input_number:
     step: 1
     unit_of_measurement: kWh
     icon: mdi:battery
-    initial: 48
 
   ems_battery_hard_min_soc:
     name: EMS tvrdé minimum baterie
@@ -252,7 +239,6 @@ input_number:
     step: 1
     unit_of_measurement: "%"
     icon: mdi:battery-alert
-    initial: 30
 
   ems_house_daily_consumption_kwh:
     name: EMS denní spotřeba domu
@@ -261,7 +247,6 @@ input_number:
     step: 0.5
     unit_of_measurement: kWh
     icon: mdi:home-lightning-bolt
-    initial: 15
 
   ems_house_daily_reserve_kwh:
     name: EMS denní rezerva domu
@@ -270,7 +255,6 @@ input_number:
     step: 0.5
     unit_of_measurement: kWh
     icon: mdi:battery-heart
-    initial: 5
 
 
   ems_night_consumption_kwh:
@@ -280,7 +264,6 @@ input_number:
     step: 0.5
     unit_of_measurement: kWh
     icon: mdi:weather-night
-    initial: 5
 
   ems_day_reserve_kwh:
     name: EMS denní potřeba po ránu
@@ -289,7 +272,6 @@ input_number:
     step: 0.5
     unit_of_measurement: kWh
     icon: mdi:home-battery
-    initial: 12
 
   ems_solar_forecast_usable_factor:
     name: EMS koeficient použitelné FV předpovědi
@@ -297,7 +279,6 @@ input_number:
     max: 1
     step: 0.05
     icon: mdi:weather-sunny-alert
-    initial: 0.8
 
   ems_battery_grid_min_nt_remaining_hours:
     name: EMS baterie nezačínat při zbytku NT pod
@@ -306,7 +287,6 @@ input_number:
     step: 0.25
     unit_of_measurement: h
     icon: mdi:timer-sand
-    initial: 2
 
   ems_battery_target_sunny_soc:
     name: EMS baterie cíl hezký den
@@ -315,7 +295,6 @@ input_number:
     step: 1
     unit_of_measurement: "%"
     icon: mdi:white-balance-sunny
-    initial: 50
 
   ems_battery_target_normal_soc:
     name: EMS baterie cíl normální den
@@ -324,7 +303,6 @@ input_number:
     step: 1
     unit_of_measurement: "%"
     icon: mdi:battery-medium
-    initial: 65
 
   ems_battery_target_bad_soc:
     name: EMS baterie cíl hnusný den
@@ -333,7 +311,6 @@ input_number:
     step: 1
     unit_of_measurement: "%"
     icon: mdi:weather-pouring
-    initial: 80
 
   ems_forecast_bad_threshold_kwh:
     name: EMS hranice hnusný den
@@ -342,7 +319,6 @@ input_number:
     step: 0.5
     unit_of_measurement: kWh
     icon: mdi:weather-pouring
-    initial: 20
 
   ems_forecast_sunny_threshold_kwh:
     name: EMS hranice hezký den
@@ -351,7 +327,6 @@ input_number:
     step: 0.5
     unit_of_measurement: kWh
     icon: mdi:white-balance-sunny
-    initial: 30
 
   ems_inverter_phase_limit_w:
     name: EMS limit měniče na fázi
@@ -360,7 +335,6 @@ input_number:
     step: 100
     unit_of_measurement: W
     icon: mdi:current-ac
-    initial: 6200
 
   ems_grid_phase_limit_w:
     name: EMS limit sítě na fázi
@@ -369,7 +343,6 @@ input_number:
     step: 100
     unit_of_measurement: W
     icon: mdi:transmission-tower
-    initial: 4600
 
   ems_grid_safety_margin_w:
     name: EMS rezerva hlavního jističe
@@ -378,7 +351,6 @@ input_number:
     step: 100
     unit_of_measurement: W
     icon: mdi:shield-alert
-    initial: 800
 
   ems_wallbox_min_current_a:
     name: EMS wallbox minimální proud
@@ -387,7 +359,6 @@ input_number:
     step: 1
     unit_of_measurement: A
     icon: mdi:ev-plug-type2
-    initial: 6
 
   ems_wallbox_max_current_a:
     name: EMS wallbox maximální proud
@@ -396,7 +367,6 @@ input_number:
     step: 1
     unit_of_measurement: A
     icon: mdi:ev-station
-    initial: 16
 
   ems_inverter_grid_charge_current_a:
     name: EMS požadovaný proud dobíjení baterie ze sítě
@@ -405,7 +375,6 @@ input_number:
     step: 1
     unit_of_measurement: A
     icon: mdi:current-ac
-    initial: 10
 
   ems_ac_in_connect_below_v:
     name: EMS AC-in připnout pod napětím
@@ -414,7 +383,6 @@ input_number:
     step: 0.1
     unit_of_measurement: V
     icon: mdi:transmission-tower-import
-    initial: 50.0
 
   ems_ac_in_disconnect_above_v:
     name: EMS AC-in odpojit nad napětím
@@ -423,7 +391,6 @@ input_number:
     step: 0.1
     unit_of_measurement: V
     icon: mdi:transmission-tower-off
-    initial: 52.8
 
   ems_ac_in_min_switch_interval_min:
     name: EMS AC-in minimální interval přepnutí
@@ -432,7 +399,6 @@ input_number:
     step: 1
     unit_of_measurement: min
     icon: mdi:timer-lock
-    initial: 5
 
   ems_emergency_charge_below_v:
     name: EMS nouzové nabíjení pod napětím
@@ -441,7 +407,6 @@ input_number:
     step: 0.1
     unit_of_measurement: V
     icon: mdi:battery-alert-variant
-    initial: 47.5
 
   ems_emergency_charge_recover_above_v:
     name: EMS nouzové nabíjení vypnout nad napětím
@@ -450,7 +415,6 @@ input_number:
     step: 0.1
     unit_of_measurement: V
     icon: mdi:battery-check
-    initial: 49.2
 
   ems_emergency_charge_current_a:
     name: EMS nouzové nabíjení proud
@@ -459,7 +423,6 @@ input_number:
     step: 1
     unit_of_measurement: A
     icon: mdi:current-ac
-    initial: 10
 
   ems_id3_target_soc:
     name: EMS ID.3 cílové SOC
@@ -468,7 +431,6 @@ input_number:
     step: 10
     unit_of_measurement: "%"
     icon: mdi:car-electric
-    initial: 80
 
   ems_id4_target_soc:
     name: EMS ID.4 cílové SOC
@@ -477,7 +439,6 @@ input_number:
     step: 10
     unit_of_measurement: "%"
     icon: mdi:car-electric
-    initial: 80
 
 
   ems_id3_wallbox_force_target_soc:
@@ -487,7 +448,6 @@ input_number:
     step: 1
     unit_of_measurement: "%"
     icon: mdi:battery-heart
-    initial: 80
 
   ems_id3_wallbox_force_current_a:
     name: EMS ID.3 Force proud
@@ -496,7 +456,6 @@ input_number:
     step: 1
     unit_of_measurement: A
     icon: mdi:current-ac
-    initial: 6
 
   ems_id3_wallbox_force_minutes:
     name: EMS ID.3 Force čas
@@ -505,7 +464,6 @@ input_number:
     step: 5
     unit_of_measurement: min
     icon: mdi:timer
-    initial: 30
 
   ems_id3_wallbox_force_energy_kwh:
     name: EMS ID.3 Force energie
@@ -514,7 +472,6 @@ input_number:
     step: 0.5
     unit_of_measurement: kWh
     icon: mdi:lightning-bolt
-    initial: 5
 
   ems_id4_wallbox_force_target_soc:
     name: EMS ID.4 Force cílové SOC
@@ -523,7 +480,6 @@ input_number:
     step: 1
     unit_of_measurement: "%"
     icon: mdi:battery-heart
-    initial: 80
 
   ems_id4_wallbox_force_current_a:
     name: EMS ID.4 Force proud
@@ -532,7 +488,6 @@ input_number:
     step: 1
     unit_of_measurement: A
     icon: mdi:current-ac
-    initial: 6
 
   ems_id4_wallbox_force_minutes:
     name: EMS ID.4 Force čas
@@ -541,7 +496,6 @@ input_number:
     step: 5
     unit_of_measurement: min
     icon: mdi:timer
-    initial: 30
 
   ems_id4_wallbox_force_energy_kwh:
     name: EMS ID.4 Force energie
@@ -550,7 +504,6 @@ input_number:
     step: 0.5
     unit_of_measurement: kWh
     icon: mdi:lightning-bolt
-    initial: 5
 
 
   ems_force_battery_target_soc:
@@ -560,7 +513,6 @@ input_number:
     step: 1
     unit_of_measurement: "%"
     icon: mdi:battery-high
-    initial: 90
 
   ems_force_battery_current_a:
     name: EMS Force baterie proud
@@ -569,7 +521,6 @@ input_number:
     step: 1
     unit_of_measurement: A
     icon: mdi:current-dc
-    initial: 20
 
   ems_force_battery_balance_current_a:
     name: EMS Force balanc baterie proud
@@ -578,7 +529,6 @@ input_number:
     step: 1
     unit_of_measurement: A
     icon: mdi:current-dc
-    initial: 20
 
   ems_weekly_battery_balance_current_a:
     name: EMS týdenní balanc proud
@@ -587,7 +537,6 @@ input_number:
     step: 1
     unit_of_measurement: A
     icon: mdi:current-dc
-    initial: 20
 
   ems_balance_voltage_threshold_v:
     name: EMS balanc napěťový práh
@@ -596,7 +545,6 @@ input_number:
     step: 0.1
     unit_of_measurement: V
     icon: mdi:sine-wave
-    initial: 55
 
   ems_balance_hold_minutes:
     name: EMS balanc držet nad prahem
@@ -605,7 +553,6 @@ input_number:
     step: 5
     unit_of_measurement: min
     icon: mdi:timer-check
-    initial: 15
 
   ems_balance_due_days:
     name: EMS balanc po dnech
@@ -614,7 +561,6 @@ input_number:
     step: 1
     unit_of_measurement: d
     icon: mdi:calendar-clock
-    initial: 21
 
   ems_balance_solar_start_hour:
     name: EMS balanc FV pokus od hodiny
@@ -622,7 +568,6 @@ input_number:
     max: 23
     step: 1
     icon: mdi:weather-sunny
-    initial: 7
 
   ems_balance_solar_end_hour:
     name: EMS balanc FV pokus do hodiny
@@ -630,7 +575,6 @@ input_number:
     max: 23
     step: 1
     icon: mdi:weather-sunny-off
-    initial: 20
 
   ems_bottom_boiler_force_power_w:
     name: EMS spodní bojler Force výkon
@@ -639,7 +583,6 @@ input_number:
     step: 1000
     unit_of_measurement: W
     icon: mdi:flash
-    initial: 1000
 
   ems_bottom_boiler_force_target_temp:
     name: EMS spodní bojler Force teplota
@@ -648,7 +591,6 @@ input_number:
     step: 1
     unit_of_measurement: °C
     icon: mdi:thermometer-water
-    initial: 55
 
   ems_bottom_boiler_force_minutes:
     name: EMS spodní bojler Force čas
@@ -657,7 +599,6 @@ input_number:
     step: 5
     unit_of_measurement: min
     icon: mdi:timer
-    initial: 60
 
   ems_bottom_boiler_force_energy_kwh:
     name: EMS spodní bojler Force energie
@@ -666,7 +607,6 @@ input_number:
     step: 0.1
     unit_of_measurement: kWh
     icon: mdi:counter
-    initial: 2
 
   ems_pergola_boiler_force_power_w:
     name: EMS pergola bojler Force výkon
@@ -675,7 +615,6 @@ input_number:
     step: 800
     unit_of_measurement: W
     icon: mdi:flash
-    initial: 800
 
   ems_pergola_boiler_force_target_temp:
     name: EMS pergola bojler Force teplota
@@ -684,7 +623,6 @@ input_number:
     step: 1
     unit_of_measurement: °C
     icon: mdi:thermometer-water
-    initial: 55
 
   ems_pergola_boiler_force_minutes:
     name: EMS pergola bojler Force čas
@@ -693,7 +631,6 @@ input_number:
     step: 5
     unit_of_measurement: min
     icon: mdi:timer
-    initial: 60
 
   ems_pergola_boiler_force_energy_kwh:
     name: EMS pergola bojler Force energie
@@ -702,7 +639,6 @@ input_number:
     step: 0.1
     unit_of_measurement: kWh
     icon: mdi:counter
-    initial: 2
 
 
   ems_high_soc_load_threshold:
@@ -712,7 +648,6 @@ input_number:
     step: 1
     unit_of_measurement: "%"
     icon: mdi:battery-arrow-up
-    initial: 90
 
   ems_full_soc_load_threshold:
     name: EMS práh aktivního hledání zátěže
@@ -721,7 +656,6 @@ input_number:
     step: 1
     unit_of_measurement: "%"
     icon: mdi:battery-charging-high
-    initial: 95
 
   ems_solar_load_support_hard_limit_w:
     name: EMS tvrdý limit podpory baterie pro FV zátěže
@@ -730,7 +664,6 @@ input_number:
     step: 100
     unit_of_measurement: W
     icon: mdi:battery-alert-variant-outline
-    initial: -3000
 
 
   ems_grid_handoff_reserve_soc:
@@ -740,7 +673,6 @@ input_number:
     step: 1
     unit_of_measurement: "%"
     icon: mdi:battery-lock
-    initial: 5
 
   ems_grid_handoff_safety_minutes:
     name: EMS časová rezerva pro nákup v NT
@@ -749,7 +681,6 @@ input_number:
     step: 5
     unit_of_measurement: min
     icon: mdi:clock-alert-outline
-    initial: 20
 
   ems_grid_handoff_min_drain_w:
     name: EMS minimální odhad vybíjení pro handoff
@@ -758,7 +689,6 @@ input_number:
     step: 100
     unit_of_measurement: W
     icon: mdi:battery-arrow-down-outline
-    initial: 300
 
 
   ems_persist_battery_load_lock_since_ts:
@@ -1097,6 +1027,12 @@ mqtt:
       value_template: "{{ value_json.battery_task.reason_display | default(value_json.battery_task.reason | default('Žádný bateriový úkol')) }}"
       icon: mdi:help-circle-outline
 
+    - name: EMS Balance Load Lock Reason
+      unique_id: ems_balance_load_lock_reason
+      state_topic: ems/tasks
+      value_template: "{{ value_json.balance_load_lock.reason | default('none') }}"
+      icon: mdi:battery-lock
+
     - name: EMS Battery Task Summary
       unique_id: ems_battery_task_summary
       state_topic: ems/tasks
@@ -1258,6 +1194,14 @@ mqtt:
       payload_on: "ON"
       payload_off: "OFF"
       icon: mdi:clock-alert-outline
+
+    - name: EMS Balance Load Lock
+      unique_id: ems_balance_load_lock
+      state_topic: ems/tasks
+      value_template: "{{ 'ON' if value_json.balance_load_lock.active | default(false) else 'OFF' }}"
+      payload_on: "ON"
+      payload_off: "OFF"
+      icon: mdi:battery-lock
 
     - name: EMS Wallbox Allowed
       unique_id: ems_wallbox_allowed
