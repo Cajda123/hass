@@ -56,6 +56,9 @@ input_boolean:
   ems_persist_safety_emergency_active:
     name: EMS persistentní nouzové dobíjení aktivní
     icon: mdi:battery-alert
+  ems_persist_balance_campaign_active:
+    name: EMS persistentní balance campaign aktivní
+    icon: mdi:battery-sync
 input_select:
   ems_wallbox_mode:
     name: EMS wallbox režim
@@ -214,6 +217,10 @@ input_text:
     name: EMS persistentní klíč cooldownu baterie
     max: 255
     icon: mdi:content-save-clock
+  ems_persist_balance_campaign_last_solar_day:
+    name: EMS persistentní poslední solární den balance campaign
+    max: 32
+    icon: mdi:calendar-sun
 input_datetime:
   ems_id3_departure:
     name: EMS ID.3 odjezd
@@ -710,6 +717,42 @@ input_number:
     step: 1
     mode: box
     icon: mdi:transmission-tower
+  ems_balance_campaign_max_solar_days:
+    name: EMS balance campaign max solárních dnů
+    min: 2
+    max: 5
+    step: 1
+    unit_of_measurement: d
+    icon: mdi:calendar-range
+  ems_balance_campaign_preserve_drop_soc:
+    name: EMS balance campaign povolený pokles SOC mezi dny
+    min: 10
+    max: 30
+    step: 1
+    unit_of_measurement: '%'
+    icon: mdi:battery-lock
+  ems_persist_balance_campaign_started_ts:
+    name: EMS persistentní začátek balance campaign
+    min: 0
+    max: 4102444800
+    step: 1
+    mode: box
+    icon: mdi:clock-start
+  ems_persist_balance_campaign_peak_soc:
+    name: EMS persistentní maximum SOC balance campaign
+    min: 0
+    max: 100
+    step: 0.1
+    mode: box
+    unit_of_measurement: '%'
+    icon: mdi:battery-high
+  ems_persist_balance_campaign_solar_days_tried:
+    name: EMS persistentní počet solárních dnů balance campaign
+    min: 0
+    max: 10
+    step: 1
+    mode: box
+    icon: mdi:counter
 mqtt:
   sensor:
   - name: EMS Grid Purchase Summary
@@ -940,6 +983,14 @@ mqtt:
     value_template: '{{ value_json.battery_task.summary | default(''žádný bateriový
       úkol'') }}'
     icon: mdi:clipboard-text-clock
+  - name: EMS Balance Campaign
+    unique_id: ems_balance_campaign
+    state_topic: ems/tasks
+    value_template: '{{ value_json.balance_campaign.status_display | default(''Vypnuto'')
+      }}'
+    json_attributes_topic: ems/tasks
+    json_attributes_template: '{{ value_json.balance_campaign | tojson }}'
+    icon: mdi:battery-sync
   - name: EMS Battery Task Progress
     unique_id: ems_battery_task_progress
     state_topic: ems/tasks
@@ -2022,6 +2073,54 @@ script:
     - service: input_boolean.turn_on
       target:
         entity_id: input_boolean.ems_persist_safety_initialized
+  ems_persist_balance_campaign_state:
+    alias: EMS uložit stav vícedenní balance campaign
+    mode: queued
+    max: 10
+    fields:
+      active:
+        required: true
+      started_ts:
+        required: true
+      peak_soc:
+        required: true
+      solar_days_tried:
+        required: true
+      last_solar_day:
+        required: true
+    sequence:
+    - choose:
+      - conditions:
+        - condition: template
+          value_template: '{{ active | bool(false) }}'
+        sequence:
+        - service: input_boolean.turn_on
+          target:
+            entity_id: input_boolean.ems_persist_balance_campaign_active
+      default:
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.ems_persist_balance_campaign_active
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ems_persist_balance_campaign_started_ts
+      data:
+        value: '{{ started_ts | int(0) }}'
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ems_persist_balance_campaign_peak_soc
+      data:
+        value: '{{ peak_soc | float(0) }}'
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.ems_persist_balance_campaign_solar_days_tried
+      data:
+        value: '{{ solar_days_tried | int(0) }}'
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.ems_persist_balance_campaign_last_solar_day
+      data:
+        value: '{{ last_solar_day | default('''') }}'
 automation:
 - alias: EMS odpověď na dotaz spodní bojler dřevo
   id: ems_bottom_boiler_wood_plan_action
