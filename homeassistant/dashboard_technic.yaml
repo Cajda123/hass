@@ -10663,6 +10663,50 @@ views:
               {%- endif %}
             color: blue
             features_position: bottom
+          - type: custom:mushroom-template-card
+            entity: sensor.ems_balance_campaign
+            primary: >-
+              {% set st = states('sensor.ems_balance_campaign') %} {% if st ==
+              'Čeká na další solární den' %}
+                Balance campaign pokračuje zítra
+              {% elif st == 'Probíhá' %}
+                Balance campaign běží ze slunce
+              {% elif st == 'Čeká na nízký tarif' %}
+                Balance campaign čeká na NT fallback
+              {% elif st == 'Balancuje baterii' %}
+                Baterie drží balancovací napětí
+              {% else %}
+                Balance campaign · {{ st }}
+              {% endif %}
+            secondary: >-
+              {% set active = state_attr('sensor.ems_balance_campaign',
+              'active') | default(false) %} {% set day =
+              state_attr('sensor.ems_balance_campaign', 'solar_days_tried') |
+              int(0) %} {% set maxd = state_attr('sensor.ems_balance_campaign',
+              'max_solar_days') | int(0) %} {% set peak =
+              state_attr('sensor.ems_balance_campaign', 'peak_soc') | float(0)
+              %} {% set floor = state_attr('sensor.ems_balance_campaign',
+              'preserve_floor_soc') | float(0) %} {% set fpv =
+              state_attr('sensor.ems_balance_campaign',
+              'tomorrow_forecast_usable_kwh') | float(0) %} {% set need =
+              state_attr('sensor.ems_balance_campaign', 'tomorrow_need_kwh') |
+              float(0) %} {% set ok = state_attr('sensor.ems_balance_campaign',
+              'tomorrow_can_finish') | default(false) %} {% if active %}
+                FV pokus {{ day }}/{{ maxd }} · peak {{ peak | round(0) }} % · ochranné minimum {{ floor | round(0) }} %
+                · zítra {{ fpv | round(1) }} kWh / potřeba {{ need | round(1) }} kWh
+                · {{ 'FV vypadá dostatečně' if ok else 'FV samo nejspíš nestačí' }}
+              {% else %}
+                Vícedenní kampaň teď neběží.
+              {% endif %}
+            icon: mdi:battery-sync
+            icon_color: >-
+              {% set st = states('sensor.ems_balance_campaign') %} {% if st in
+              ['Probíhá','Balancuje baterii'] %}blue {% elif st in ['Čeká na
+              další solární den','Čeká na slunce','Čeká na nízký tarif'] %}amber
+              {% elif st == 'Dokončeno' %}green {% else %}grey{% endif %}
+            multiline_secondary: true
+            tap_action:
+              action: more-info
           - type: entities
             title: Bateriové tasky
             show_header_toggle: false
@@ -10683,6 +10727,8 @@ views:
               - input_number.ems_balance_due_days
               - input_number.ems_balance_solar_start_hour
               - input_number.ems_balance_solar_end_hour
+              - input_number.ems_balance_campaign_max_solar_days
+              - input_number.ems_balance_campaign_preserve_drop_soc
       - type: grid
         cards:
           - type: heading
