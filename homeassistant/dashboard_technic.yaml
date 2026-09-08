@@ -3018,6 +3018,317 @@ views:
         disable_menu: false
         disable_battery_warning: true
         eco_temperature: 60
+  - title: Topení v2
+    path: topeni-v2
+    icon: mdi:home-thermometer
+    type: sections
+    max_columns: 4
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: ATMOS DC18S
+            icon: mdi:fire
+          - type: custom:mushroom-template-card
+            entity: sensor.kotel_drevo_stav
+            primary: >-
+              {% set m = {
+                'vypnuto':'Vypnuto', 'zatop':'Zátop',
+                'rozhorivani':'Rozhořívání', 'horeni':'Hoření',
+                'dohorivani':'Dohořívání', 'vyhasinani':'Vyhasínání',
+                'chyba':'Chyba'
+              } %} ATMOS · {{ m.get(states('sensor.kotel_drevo_stav'),
+              states('sensor.kotel_drevo_stav')) }}
+            secondary: >-
+              {{ states('sensor.kotel_drevo_vykon') | float(0) | round(2) }} kW
+              · výstup {{ states('sensor.kotel_drevo_vystup') | float(0) |
+              round(1) }} °C · spaliny {{ states('sensor.kotel_drevo_spaliny') |
+              float(0) | round(1) }} °C
+            icon: mdi:fire
+            icon_color: >-
+              {% set s = states('sensor.kotel_drevo_stav') %} {% if s ==
+              'horeni' %}red {% elif s in ['zatop','rozhorivani'] %}orange {%
+              elif s in ['dohorivani','vyhasinani'] %}amber {% elif s == 'chyba'
+              %}deep-orange {% else %}grey{% endif %}
+            multiline_secondary: true
+            tap_action:
+              action: more-info
+          - type: custom:mushroom-chips-card
+            alignment: center
+            chips:
+              - type: template
+                entity: binary_sensor.kotel_drevo_hori
+                content: >-
+                  {{ 'Hoří' if is_state('binary_sensor.kotel_drevo_hori','on')
+                  else 'Nehoří' }}
+                icon: mdi:fire
+                icon_color: >-
+                  {{ 'red' if is_state('binary_sensor.kotel_drevo_hori','on')
+                  else 'grey' }}
+              - type: template
+                entity: binary_sensor.kotel_drevo_dostupne_teplo
+                content: >-
+                  {{ 'Teplo k dispozici' if
+                  is_state('binary_sensor.kotel_drevo_dostupne_teplo','on') else
+                  'Bez tepla' }}
+                icon: mdi:thermometer-check
+                icon_color: >-
+                  {{ 'orange' if
+                  is_state('binary_sensor.kotel_drevo_dostupne_teplo','on') else
+                  'grey' }}
+              - type: template
+                entity: binary_sensor.kotel_drevo_ma_palivo
+                content: >-
+                  {{ 'Palivo ano' if
+                  is_state('binary_sensor.kotel_drevo_ma_palivo','on') else
+                  'Palivo ne' }}
+                icon: mdi:forest
+                icon_color: >-
+                  {{ 'brown' if
+                  is_state('binary_sensor.kotel_drevo_ma_palivo','on') else
+                  'grey' }}
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.kotel_drevo_tepelny_stav
+                name: Tepelný stav
+              - entity: sensor.kotel_drevo_vystup
+                name: Výstup
+              - entity: sensor.kotel_drevo_vstup
+                name: Vratka
+              - entity: sensor.kotel_drevo_delta_t
+                name: ΔT
+              - entity: sensor.kotel_drevo_spaliny
+                name: Spaliny
+              - entity: sensor.kotel_drevo_vykon
+                name: Výkon
+      - type: grid
+        cards:
+          - type: heading
+            heading: Dům
+            icon: mdi:radiator
+          - type: custom:mushroom-template-card
+            entity: binary_sensor.ems_heating_demand
+            primary: |-
+              {% if is_state('binary_sensor.ems_heating_demand','on') %}
+                Dům chce topit
+              {% else %}
+                Bez požadavku na teplo
+              {% endif %}
+            secondary: >-
+              {% set src = {
+                'WOOD':'dřevo', 'BUFFER':'akumulace', 'GAS':'plyn',
+                'WAITING_FOR_WOOD':'čekání na dřevo', 'WAIT_VALVES':'čekání na ventily',
+                'GAS_DHW':'TUV plynem', 'NONE':'bez zdroje'
+              } %} potřeba {{ states('sensor.ems_heating_demand_percent') |
+              float(0) | round(0) }} % · okruhy {{
+              states('sensor.ems_heating_open_valves') | int(0) }} · {{
+              src.get(states('sensor.ems_heating_source'),
+              states('sensor.ems_heating_source')) }}
+            icon: mdi:radiator
+            icon_color: >-
+              {% set src = states('sensor.ems_heating_source') %} {% if src ==
+              'GAS' %}orange {% elif src == 'WOOD' %}red {% elif src == 'BUFFER'
+              %}blue {% elif is_state('binary_sensor.ems_heating_demand','on')
+              %}amber {% else %}grey{% endif %}
+            multiline_secondary: true
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: switch.servo_aku_topeni
+                name: Ventil → dřevo/AKU
+              - entity: switch.rele_16ch_tech_pin_11_2
+                name: Čerpadlo podlahovky
+              - entity: switch.rele_16ch_tech_pin_7_2
+                name: De Dietrich CH
+          - type: conditional
+            conditions:
+              - condition: state
+                entity: input_boolean.ems_heating_wood_request_pending
+                state: 'on'
+            card:
+              type: custom:mushroom-template-card
+              entity: input_boolean.ems_heating_wood_request_pending
+              primary: Čekám na zatopení dřevem
+              secondary: >-
+                odpověď {{ states('input_select.ems_heating_wood_answer') }} ·
+                deadline {{ states('input_datetime.ems_heating_wood_deadline')
+                }}
+              icon: mdi:timer-sand
+              icon_color: amber
+              multiline_secondary: true
+      - type: grid
+        cards:
+          - type: heading
+            heading: Zásobníky
+            icon: phu:water-reservoir
+          - type: custom:mushroom-template-card
+            entity: binary_sensor.ems_buffer_available
+            primary: >-
+              Aku · {{ 'použitelné' if
+              is_state('binary_sensor.ems_buffer_available','on') else 'studené'
+              }}
+            secondary: >-
+              {{ states('sensor.ems_buffer_energy') | float(0) | round(1) }} kWh
+              · {{ states('sensor.ems_buffer_percent') | float(0) | round(0) }}
+              %
+            icon: phu:water-reservoir
+            icon_color: >-
+              {{ 'red' if is_state('binary_sensor.ems_buffer_available','on')
+              else 'blue' }}
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.zasobnik_horni
+                name: Zásobník 1 horní
+              - entity: sensor.zasobnik_dolni
+                name: Zásobník 1 dolní
+              - entity: sensor.zasobnik_1_horni
+                name: Zásobník 2 horní
+              - entity: sensor.zasobnik_1_dolni
+                name: Zásobník 2 dolní
+              - entity: sensor.ems_buffer_energy
+                name: Energie celkem
+              - entity: sensor.ems_buffer_percent
+                name: Stav energie
+      - type: grid
+        cards:
+          - type: heading
+            heading: Bojler / TUV
+            icon: mdi:water-boiler
+          - type: custom:mushroom-template-card
+            entity: sensor.ems_dhw_source
+            primary: >-
+              {% set src = {'GAS':'plyn','WOOD_BUFFER':'dřevo /
+              AKU','ELECTRIC':'elektrika','NONE':'bez ohřevu'} %} TUV · {{
+              src.get(states('sensor.ems_dhw_source'),
+              states('sensor.ems_dhw_source')) }}
+            secondary: >-
+              horní {{ states('sensor.ems_bottom_boiler_top_temp') | float(0) |
+              round(1) }} °C · dolní {{
+              states('sensor.ems_bottom_boiler_bottom_temp') | float(0) |
+              round(1) }} °C
+            icon: mdi:water-boiler
+            icon_color: >-
+              {% set s = states('sensor.ems_dhw_source') %} {% if s == 'GAS'
+              %}orange {% elif s == 'WOOD_BUFFER' %}red {% elif s == 'ELECTRIC'
+              %}amber {% else %}grey{% endif %}
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: input_boolean.servo_bojler_plyn
+                name: Ventil → plyn
+              - entity: switch.rele_16ch_tech_pin_8_2
+                name: Čerpadlo dřevo/AKU
+              - entity: switch.rele_16ch_tech_pin_6_2
+                name: De Dietrich DHW
+              - entity: input_boolean.ems_gas_dhw_guard_active
+                name: Ochrana podlahovky
+              - entity: input_select.ems_bottom_boiler_force_mode
+                name: Force režim
+              - entity: input_number.ems_bottom_boiler_force_target_temp
+                name: Cílová teplota
+          - type: custom:mushroom-template-card
+            entity: input_select.ems_bottom_boiler_force_mode
+            primary: Natopit bojler plynem
+            secondary: >-
+              {% if
+              is_state('input_select.ems_bottom_boiler_force_mode','FORCE_GAS')
+              %}
+                FORCE_GAS je aktivní
+              {% else %}
+                Vynutí ohřev TUV přes De Dietrich
+              {% endif %}
+            icon: mdi:gas-burner
+            icon_color: >-
+              {{ 'red' if
+              is_state('input_select.ems_bottom_boiler_force_mode','FORCE_GAS')
+              else 'orange' }}
+            tap_action:
+              action: call-service
+              service: input_select.select_option
+              target:
+                entity_id: input_select.ems_bottom_boiler_force_mode
+              data:
+                option: FORCE_GAS
+              confirmation:
+                text: Natopit spodní bojler plynem?
+      - type: grid
+        cards:
+          - type: heading
+            heading: De Dietrich
+            icon: mdi:gas-burner
+          - type: custom:mushroom-template-card
+            entity: sensor.rs485convert_boiler_state
+            primary: |-
+              {% if not is_state('binary_sensor.ems_gas_available','on') %}
+                De Dietrich · BLOKACE
+              {% elif is_state('binary_sensor.ems_gas_burning_dhw','on') %}
+                De Dietrich · topí TUV
+              {% elif is_state('binary_sensor.ems_gas_burning_ch','on') %}
+                De Dietrich · topí dům
+              {% else %}
+                De Dietrich · {{ states('sensor.rs485convert_boiler_state') }}
+              {% endif %}
+            secondary: >-
+              výkon {{ states('sensor.rs485convert_boiler_actual_power') |
+              float(0) | round(0) }} % · výstup {{
+              states('sensor.rs485convert_boiler_flow_temp') | float(0) |
+              round(1) }} °C · vratka {{
+              states('sensor.rs485convert_boiler_return_temp') | float(0) |
+              round(1) }} °C {% if not
+              is_state('binary_sensor.ems_gas_available','on') %}
+                · lockout {{ states('sensor.rs485convert_boiler_lockout') }}
+              {% endif %}
+            icon: mdi:gas-burner
+            icon_color: >-
+              {% if not is_state('binary_sensor.ems_gas_available','on') %}red
+              {% elif is_state('binary_sensor.ems_gas_burning_dhw','on') %}red
+              {% elif is_state('binary_sensor.ems_gas_burning_ch','on') %}orange
+              {% else %}green{% endif %}
+            multiline_secondary: true
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.rs485convert_boiler_state
+                name: Stav
+              - entity: sensor.rs485convert_boiler_sub_state
+                name: Podstav
+              - entity: sensor.rs485convert_boiler_actual_power
+                name: Výkon
+              - entity: sensor.rs485convert_boiler_flow_temp
+                name: Výstup
+              - entity: sensor.rs485convert_boiler_return_temp
+                name: Vratka
+              - entity: sensor.rs485convert_boiler_fanspeed
+                name: Ventilátor
+              - entity: sensor.rs485convert_boiler_pump_percentage
+                name: Čerpadlo
+              - entity: sensor.rs485convert_boiler_lockout
+                name: Lockout
+              - entity: sensor.rs485convert_boiler_blocking
+                name: Blocking
+      - type: grid
+        cards:
+          - type: heading
+            heading: Nastavení
+            icon: mdi:tune
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: input_boolean.ems_heating_manager_enabled
+                name: Heating Manager
+              - entity: input_number.ems_heating_wood_wait_minutes
+                name: Čekání na dřevo
+              - entity: input_number.ems_heating_source_valve_settle_seconds
+                name: Ventil topení
+              - entity: input_number.ems_dhw_source_valve_settle_seconds
+                name: Ventil TUV
+              - entity: input_number.ems_dhw_wood_start_delta_k
+                name: TUV ΔT start
+              - entity: input_number.ems_dhw_wood_stop_delta_k
+                name: TUV ΔT stop
+    cards: []
   - title: Kotelna_drevo
     path: kotelna-drevo
     icon: mdi:campfire
@@ -6543,62 +6854,13 @@ views:
         show_state: true
         show_icon: true
         entity: binary_sensor.pir_dilna_occupancy
-  - icon: phu:chicken-coup
-    cards: []
-    subview: true
-    title: Kurník
+  - title: Kurník
     path: kurnik
+    icon: phu:chicken-coup
+    subview: true
     type: sections
-    sections:
-      - type: grid
-        cards:
-          - type: entities
-            entities:
-              - entity: sensor.kurnik_t_temperature
-                name: Venku
-              - entity: sensor.kurnik_t_humidity
-              - entity: sensor.kurnik_t_battery
-              - entity: sensor.inkubator_temperature
-              - entity: sensor.inkubator_humidity
-              - entity: sensor.inkubator_battery
-          - type: vertical-stack
-            cards:
-              - type: entities
-                entities:
-                  - entity: switch.zasuvka_kurnik
-                    type: custom:multiple-entity-row
-                    name: Zásuvka
-                    icon: phu:plug-eu
-                    toggle: true
-                    state_color: true
-                    entities:
-                      - entity: sensor.zasuvka_kurnik_power
-                        name: Příkon
-                      - entity: sensor.zasuvka_kurnik_energy
-                        name: Spotřeba
-      - type: grid
-        cards:
-          - type: custom:mushroom-cover-card
-            entity: cover.kurnik_dvirka_chicken_door
-            show_position_control: false
-            show_buttons_control: true
-            tap_action:
-              action: more-info
-            fill_container: true
-            grid_options:
-              columns: 12
-              rows: 2
-            show_tilt_position_control: false
-            name: Dvířka
-          - type: custom:advanced-camera-card
-            cameras:
-              - camera_entity: camera.kurnik
-                live_provider: auto
-            view:
-              default: live
-            status_bar:
-              style: hover
     max_columns: 4
+    cards: []
     badges:
       - type: entity
         show_name: false
@@ -6611,17 +6873,369 @@ views:
         show_name: false
         show_state: true
         show_icon: true
-        entity: sensor.kurnik_dvirka_osvetleni
-      - type: entity
-        show_name: false
-        show_state: true
-        show_icon: true
-        entity: sensor.kurnik_dvirka_solar
-      - type: entity
-        show_name: false
-        show_state: true
-        show_icon: true
         entity: sensor.kurnik_slepice_dvirka_classification
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Evidence chovu
+            heading_style: title
+            icon: mdi:clipboard-text-outline
+          - type: custom:mushroom-template-card
+            primary: Vejce
+            secondary: >-
+              Mix {{ states('sensor.slepice_mix_sneseno_tento_mesic') }} ks ·
+              Sebritky {{ states('sensor.sebritka_sneseno_tento_mesic') }} ks
+            icon: mdi:egg
+            icon_color: amber
+            multiline_secondary: true
+            fill_container: true
+            tap_action:
+              action: navigate
+              navigation_path: vejce
+            hold_action:
+              action: url
+              url_path: https://slepice.cajdacnc.cz/
+          - type: custom:mushroom-template-card
+            primary: Finance
+            secondary: >-
+              Bilance {{ states('sensor.slepice_bilance_tento_mesic') }} Kč ·
+              náklad {{ states('sensor.slepice_naklad_na_vejce') }} Kč/vejce
+            icon: mdi:cash-multiple
+            icon_color: >-
+              {% set v = states('sensor.slepice_bilance_tento_mesic') | float(0)
+              %} {{ 'green' if v >= 0 else 'red' }}
+            multiline_secondary: true
+            fill_container: true
+            tap_action:
+              action: navigate
+              navigation_path: vejce
+          - type: custom:mushroom-template-card
+            primary: Chov
+            secondary: '{{ states(''sensor.slepice_pocet_v_chovu'') }} kusů v evidenci'
+            icon: mdi:bird
+            icon_color: teal
+            fill_container: true
+            tap_action:
+              action: url
+              url_path: https://slepice.cajdacnc.cz/flock
+          - type: custom:mushroom-template-card
+            primary: Líhnutí
+            secondary: >-
+              {{ states('sensor.slepice_aktivni_lihnuti') }} aktivní · {{
+              states('sensor.slepice_vejce_v_lihnuti') }} vajec
+            icon: mdi:egg-easter
+            icon_color: purple
+            multiline_secondary: true
+            fill_container: true
+            tap_action:
+              action: navigate
+              navigation_path: lihnuti
+            hold_action:
+              action: url
+              url_path: https://slepice.cajdacnc.cz/incubator
+      - type: grid
+        cards:
+          - type: heading
+            heading: Kurník
+            heading_style: title
+            icon: phu:chicken-coup
+          - type: custom:mushroom-template-card
+            primary: Prostředí v kurníku
+            secondary: >-
+              {{ states('sensor.kurnik_t_temperature') }} °C · {{
+              states('sensor.kurnik_t_humidity') }} %
+            icon: mdi:home-thermometer-outline
+            icon_color: >-
+              {% set t = states('sensor.kurnik_t_temperature') | float(0) %} {%
+              if t < 0 %}blue{% elif t < 10 %}cyan{% elif t < 25 %}green{% else
+              %}red{% endif %}
+            multiline_secondary: true
+            tap_action:
+              action: more-info
+              entity: sensor.kurnik_t_temperature
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.kurnik_t_temperature
+                name: Teplota
+                icon: mdi:thermometer
+              - entity: sensor.kurnik_t_humidity
+                name: Vlhkost
+                icon: mdi:water-percent
+              - entity: sensor.kurnik_t_battery
+                name: Baterie čidla
+                icon: mdi:battery
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: switch.zasuvka_kurnik
+                type: custom:multiple-entity-row
+                name: Zásuvka
+                icon: phu:plug-eu
+                toggle: true
+                state_color: true
+                entities:
+                  - entity: sensor.zasuvka_kurnik_power
+                    name: Příkon
+                  - entity: sensor.zasuvka_kurnik_energy
+                    name: Spotřeba
+      - type: grid
+        cards:
+          - type: heading
+            heading: Dvířka
+            heading_style: title
+            icon: mdi:door-sliding
+          - type: custom:mushroom-cover-card
+            entity: cover.kurnik_dvirka_chicken_door
+            name: Dvířka kurníku
+            show_position_control: false
+            show_tilt_position_control: false
+            show_buttons_control: true
+            tap_action:
+              action: more-info
+            fill_container: true
+            grid_options:
+              columns: 12
+              rows: 2
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.kurnik_slepice_dvirka_classification
+                name: Stav / klasifikace
+      - type: grid
+        cards:
+          - type: heading
+            heading: Kamera
+            heading_style: title
+            icon: mdi:cctv
+          - type: custom:advanced-camera-card
+            cameras:
+              - camera_entity: camera.kurnik
+                live_provider: auto
+            view:
+              default: live
+            status_bar:
+              style: hover
+  - title: Vejce
+    path: vejce
+    icon: mdi:egg
+    subview: true
+    type: sections
+    max_columns: 4
+    cards: []
+    badges:
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: sensor.slepice_bilance_tento_mesic
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: sensor.slepice_naklad_na_vejce
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: sensor.slepice_pocet_v_chovu
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Slepice mix
+            heading_style: title
+            icon: mdi:egg
+          - type: custom:mushroom-template-card
+            primary: Slepice mix
+            secondary: >-
+              Sneseno {{ states('sensor.slepice_mix_sneseno_tento_mesic') }} ks
+              · rozbito {{ states('sensor.slepice_mix_rozbito_tento_mesic') }}
+              ks
+            icon: mdi:egg
+            icon_color: amber
+            multiline_secondary: true
+          - type: tile
+            entity: sensor.slepice_mix_sneseno_tento_mesic
+            name: Sneseno tento měsíc
+            icon: mdi:egg
+            color: amber
+          - type: tile
+            entity: sensor.slepice_mix_rozbito_tento_mesic
+            name: Rozbito
+            icon: mdi:egg-off
+            color: red
+      - type: grid
+        cards:
+          - type: heading
+            heading: Sebritka
+            heading_style: title
+            icon: mdi:egg-outline
+          - type: custom:mushroom-template-card
+            primary: Sebritka
+            secondary: >-
+              Sneseno {{ states('sensor.sebritka_sneseno_tento_mesic') }} ks ·
+              rozbito {{ states('sensor.sebritka_rozbito_tento_mesic') }} ks
+            icon: mdi:egg-outline
+            icon_color: yellow
+            multiline_secondary: true
+          - type: tile
+            entity: sensor.sebritka_sneseno_tento_mesic
+            name: Sneseno tento měsíc
+            icon: mdi:egg
+            color: amber
+          - type: tile
+            entity: sensor.sebritka_rozbito_tento_mesic
+            name: Rozbito
+            icon: mdi:egg-off
+            color: red
+      - type: grid
+        cards:
+          - type: heading
+            heading: Finance
+            heading_style: title
+            icon: mdi:finance
+          - type: tile
+            entity: sensor.slepice_trzby_tento_mesic
+            name: Tržby
+            icon: mdi:cash-plus
+            color: green
+          - type: tile
+            entity: sensor.slepice_naklady_tento_mesic
+            name: Náklady
+            icon: mdi:cash-minus
+            color: red
+          - type: tile
+            entity: sensor.slepice_naklad_na_vejce
+            name: Náklad / vejce
+            icon: mdi:egg-outline
+            color: amber
+          - type: tile
+            entity: sensor.slepice_prumerna_prodejni_cena
+            name: Průměrná prodejní cena
+            icon: mdi:cash-multiple
+            color: blue
+          - type: tile
+            entity: sensor.slepice_bilance_tento_mesic
+            name: Bilance měsíce
+            icon: mdi:chart-line
+            color: teal
+      - type: grid
+        cards:
+          - type: heading
+            heading: Odběratelé a evidence
+            heading_style: title
+            icon: mdi:account-group
+          - type: tile
+            entity: sensor.slepice_dluh_odberatelu
+            name: Dluh odběratelů
+            icon: mdi:account-cash-outline
+            color: red
+          - type: tile
+            entity: sensor.slepice_predplaceno_odberateli
+            name: Předplaceno
+            icon: mdi:cash-check
+            color: green
+          - type: custom:mushroom-template-card
+            primary: Odběratelé
+            secondary: Odběry, dluhy a předplatné
+            icon: mdi:account-group
+            icon_color: indigo
+            tap_action:
+              action: url
+              url_path: https://slepice.cajdacnc.cz/customers
+          - type: custom:mushroom-template-card
+            primary: Evidence vajec
+            secondary: Zápis a opravy záznamů
+            icon: mdi:open-in-new
+            icon_color: amber
+            tap_action:
+              action: url
+              url_path: https://slepice.cajdacnc.cz/
+  - title: Líhnutí
+    path: lihnuti
+    icon: mdi:egg-easter
+    subview: true
+    type: sections
+    max_columns: 4
+    cards: []
+    badges:
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: sensor.inkubator_temperature
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: sensor.inkubator_humidity
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: sensor.slepice_nejblizsi_lihnuti
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Inkubátor
+            heading_style: title
+            icon: mdi:thermometer-lines
+          - type: custom:mushroom-template-card
+            primary: Inkubátor
+            secondary: >-
+              {{ states('sensor.inkubator_temperature') }} °C · {{
+              states('sensor.inkubator_humidity') }} % · baterie {{
+              states('sensor.inkubator_battery') }} %
+            icon: mdi:egg-easter
+            icon_color: orange
+            multiline_secondary: true
+          - type: tile
+            entity: sensor.inkubator_temperature
+            name: Teplota
+            icon: mdi:thermometer
+            color: orange
+          - type: tile
+            entity: sensor.inkubator_humidity
+            name: Vlhkost
+            icon: mdi:water-percent
+            color: blue
+          - type: tile
+            entity: sensor.inkubator_battery
+            name: Baterie čidla
+            icon: mdi:battery
+            color: green
+      - type: grid
+        cards:
+          - type: heading
+            heading: Evidence líhnutí
+            heading_style: title
+            icon: mdi:egg-easter
+          - type: tile
+            entity: sensor.slepice_aktivni_lihnuti
+            name: Aktivní líhnutí
+            icon: mdi:egg
+            color: purple
+          - type: tile
+            entity: sensor.slepice_vejce_v_lihnuti
+            name: Vejce v líhnutí
+            icon: mdi:egg
+            color: amber
+          - type: tile
+            entity: sensor.slepice_nejblizsi_lihnuti
+            name: Nejbližší líhnutí
+            icon: mdi:calendar-heart
+            color: pink
+          - type: custom:mushroom-template-card
+            primary: Otevřít evidenci líhnutí
+            secondary: Várky, prosvícení a výsledky
+            icon: mdi:open-in-new
+            icon_color: purple
+            tap_action:
+              action: url
+              url_path: https://slepice.cajdacnc.cz/incubator
   - type: sections
     max_columns: 2
     title: Bazén
