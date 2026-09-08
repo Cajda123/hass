@@ -1,0 +1,862 @@
+# Home Assistant package: EMS Heating Manager v2 (integrated Node-RED bundle)
+# Vložit jako samostatný package (např. /config/packages/ems_heating.yaml).
+#
+# Stabilní API:
+#   sensor.kotel_drevo_stav
+#   binary_sensor.kotel_drevo_hori
+#   binary_sensor.kotel_drevo_dostupne_teplo
+#   binary_sensor.kotel_drevo_ma_palivo
+#   sensor.kotel_drevo_vykon / vystup / vstup / spaliny / delta_t
+#   binary_sensor.ems_buffer_available
+#   binary_sensor.ems_heating_demand
+#   sensor.ems_heating_demand_percent
+#   sensor.ems_heating_source
+#   sensor.ems_dhw_source
+#
+# Pracovní předpoklad:
+#   switch.servo_aku_topeni ON = topení z dřeva/AKU
+#   input_boolean.servo_bojler_plyn ON = bojler na plyn
+# Pokud je druhý ventil obráceně, otočí se pouze dvě místa ve skriptech níže.
+
+input_boolean:
+  ems_heating_manager_enabled:
+    name: EMS Heating Manager povolen
+    icon: mdi:radiator
+
+  ems_heating_wood_request_pending:
+    name: EMS čeká na odpověď - zatopit dřevem
+    icon: mdi:timer-sand
+
+  ems_dhw_gas_requested:
+    name: EMS požadavek bojler plyn
+    icon: mdi:water-boiler
+
+  ems_dhw_wood_requested:
+    name: EMS požadavek bojler dřevo/AKU
+    icon: mdi:water-boiler-auto
+
+  ems_gas_dhw_guard_active:
+    name: EMS ochrana topného okruhu při GAS DHW
+    icon: mdi:shield-home
+
+  ems_restore_climate_pokoj:
+    name: EMS restore Pokoj
+  ems_restore_climate_kuchyn:
+    name: EMS restore Kuchyň
+  ems_restore_climate_koupelna:
+    name: EMS restore Koupelna
+  ems_restore_climate_dilna:
+    name: EMS restore Dílna
+
+input_select:
+  ems_heating_wood_answer:
+    name: EMS odpověď na zatopení dřevem
+    icon: mdi:fire
+    options:
+      - unknown
+      - will_heat
+      - will_not_heat
+
+input_datetime:
+  ems_heating_wood_deadline:
+    name: EMS deadline na zatopení dřevem
+    has_date: true
+    has_time: true
+
+input_number:
+  ems_heating_wood_wait_minutes:
+    name: EMS čekání na zatopení dřevem
+    min: 5
+    max: 120
+    step: 5
+    unit_of_measurement: min
+    initial: 30
+
+  ems_heating_source_valve_settle_seconds:
+    name: EMS čas přestavení ventilu topení
+    min: 10
+    max: 300
+    step: 5
+    unit_of_measurement: s
+    initial: 120
+
+  ems_dhw_source_valve_settle_seconds:
+    name: EMS čas přestavení ventilu bojler dřevo/plyn
+    min: 10
+    max: 300
+    step: 5
+    unit_of_measurement: s
+    initial: 185
+
+  ems_dhw_wood_start_delta_k:
+    name: EMS bojler dřevo start delta
+    min: 1
+    max: 20
+    step: 0.5
+    unit_of_measurement: K
+    initial: 5
+
+  ems_dhw_wood_stop_delta_k:
+    name: EMS bojler dřevo stop delta
+    min: 0
+    max: 15
+    step: 0.5
+    unit_of_measurement: K
+    initial: 2
+
+template:
+  # ---------- ATMOS - stabilní API nad dnešním RFR ----------
+  - sensor:
+      - name: Kotel dřevo stav
+        unique_id: kotel_drevo_stav
+        icon: mdi:fire
+        state: >-
+          {% set raw = states('sensor.rfr2_test_kotel_api_stav_raw') %}
+          {% if raw not in ['unknown', 'unavailable', ''] %}
+            {{ raw }}
+          {% else %}
+            {% set out = states('sensor.rfr2_test_vystup') | float(0) %}
+            {% set flue = states('sensor.rfr2_test_kotel_dr_spaliny') | float(0) %}
+            {% set db = states('sensor.kotel_drevi_bypass_der') | float(0) %}
+            {% set df = states('sensor.kotel_dr_spaliny_der') | float(0) %}
+            {% set old_heat = is_state('input_boolean.topeni_drevem', 'on') %}
+            {% set rising = is_state('input_boolean.kotel_drevo_stav', 'on') %}
+            {% set pump = state_attr('fan.alpha_controll_cerpadlo_otacky', 'percentage') | float(0) %}
+            {% set dz = states('sensor.rozdil_kotel_zasobnik') | float(999) %}
+            {% if old_heat and flue >= 100 %}
+              horeni
+            {% elif rising and (flue >= 40 or states('sensor.rfr2_test_bypass') | float(0) >= 40 or out >= 35) and (db > 0 or df > 0) and flue < 80 %}
+              zatop
+            {% elif rising and (flue >= 40 or states('sensor.rfr2_test_bypass') | float(0) >= 40 or out >= 35) and (db > 0 or df > 0) %}
+              rozhorivani
+            {% elif old_heat and (db < 0 or flue < 100) %}
+              dohorivani
+            {% elif out < 45 and flue < 60 %}
+              vypnuto
+            {% elif states('sensor.rfr2_test_bypass') | float(0) < 90
+                    and dz < 2 and db < -0.15 and flue <= 80 and pump <= 30 %}
+              vyhasinani
+            {% else %}
+              vyhasinani
+            {% endif %}
+          {% endif %}
+
+      - name: Kotel dřevo výkon
+        unique_id: kotel_drevo_vykon
+        unit_of_measurement: kW
+        device_class: power
+        state_class: measurement
+        state: >-
+          {% set raw = states('sensor.rfr2_test_kotel_api_vykon_raw') %}
+          {% if raw not in ['unknown','unavailable',''] %}
+            {{ raw | float(0) }}
+          {% else %}
+            {{ states('sensor.vykon_kotle') | float(0) }}
+          {% endif %}
+
+      - name: Kotel dřevo výstup
+        unique_id: kotel_drevo_vystup
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        state: "{{ states('sensor.rfr2_test_vystup') | float(0) }}"
+
+      - name: Kotel dřevo vstup
+        unique_id: kotel_drevo_vstup
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        state: "{{ states('sensor.rfr2_test_vstup') | float(0) }}"
+
+      - name: Kotel dřevo spaliny
+        unique_id: kotel_drevo_spaliny
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        state: "{{ states('sensor.rfr2_test_kotel_dr_spaliny') | float(0) }}"
+
+      - name: Kotel dřevo delta T
+        unique_id: kotel_drevo_delta_t
+        unit_of_measurement: K
+        state_class: measurement
+        state: >-
+          {{ (states('sensor.rfr2_test_vystup') | float(0)
+             - states('sensor.rfr2_test_vstup') | float(0)) | round(1) }}
+
+      - name: Kotel dřevo tepelný stav
+        unique_id: kotel_drevo_tepelny_stav
+        icon: mdi:thermometer-lines
+        state: >-
+          {% set s = states('sensor.kotel_drevo_stav') %}
+          {% set out = states('sensor.kotel_drevo_vystup') | float(0) %}
+          {% if s == 'vypnuto' %}cold
+          {% elif s in ['zatop','rozhorivani'] %}starting
+          {% elif out >= 90 and is_state('binary_sensor.kotel_drevo_dostupne_teplo','on') %}surplus
+          {% elif s == 'horeni' %}available
+          {% elif s in ['dohorivani','vyhasinani'] %}dying
+          {% else %}empty
+          {% endif %}
+
+      # Zásobníky - zatím respektují současnou logiku, jen ji normalizují.
+      - name: EMS Buffer Energy
+        unique_id: ems_buffer_energy
+        unit_of_measurement: kWh
+        device_class: energy
+        state_class: measurement
+        state: >-
+          {{ (states('sensor.energie_zasobnik') | float(0)
+             + states('sensor.energie_zasobnik1') | float(0)) | round(2) }}
+
+      - name: EMS Buffer Percent
+        unique_id: ems_buffer_percent
+        unit_of_measurement: "%"
+        state_class: measurement
+        state: >-
+          {% set a = states('sensor.energie_zasobnik_perc') %}
+          {% set b = states('sensor.energie_zasobnik1_perc') %}
+          {% set vals = [] %}
+          {% if a not in ['unknown','unavailable',''] %}
+            {% set vals = vals + [a | float(0)] %}
+          {% endif %}
+          {% if b not in ['unknown','unavailable',''] %}
+            {% set vals = vals + [b | float(0)] %}
+          {% endif %}
+          {{ ((vals | sum) / (vals | count)) | round(1) if vals | count > 0 else 0 }}
+
+      - name: EMS Heating Demand Percent
+        unique_id: ems_heating_demand_percent
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:radiator
+        state: >-
+          {% set vals = [
+            states('sensor.pokoj_power_percent') | float(0),
+            states('sensor.kuchyn_power_percent') | float(0),
+            states('sensor.koupelna_power_percent') | float(0),
+            states('sensor.dilna_power_percent') | float(0)
+          ] %}
+          {{ vals | max | round(0) }}
+
+      - name: EMS Heating Open Valves
+        unique_id: ems_heating_open_valves
+        unit_of_measurement: "ventil"
+        icon: mdi:valve
+        state: >-
+          {{ [
+            is_state('switch.rele_16ch_tech_pin_14_2','on'),
+            is_state('switch.rele_16ch_tech_pin_15_2','on'),
+            is_state('switch.rele_16ch_tech_pin_13_2','on'),
+            is_state('switch.rele_16ch_tech_pin_3_2','on')
+          ] | select('eq', true) | list | count }}
+
+      - name: EMS Heating Source
+        unique_id: ems_heating_source
+        icon: mdi:heating-coil
+        state: >-
+          {% if is_state('switch.rele_16ch_tech_pin_6_2','on')
+                or is_state('binary_sensor.ems_gas_burning_dhw','on') %}
+            GAS_DHW
+          {% elif is_state('switch.rele_16ch_tech_pin_7_2','on')
+                  or is_state('binary_sensor.ems_gas_burning_ch','on') %}
+            GAS
+          {% elif is_state('switch.servo_aku_topeni','on')
+                  and is_state('binary_sensor.kotel_drevo_dostupne_teplo','on') %}
+            WOOD
+          {% elif is_state('switch.servo_aku_topeni','on')
+                  and is_state('binary_sensor.ems_buffer_available','on') %}
+            BUFFER
+          {% elif is_state('input_boolean.ems_heating_wood_request_pending','on') %}
+            WAITING_FOR_WOOD
+          {% else %}
+            NONE
+          {% endif %}
+
+      - name: EMS DHW Source
+        unique_id: ems_dhw_source
+        icon: mdi:water-boiler
+        state: >-
+          {% if is_state('switch.rele_16ch_tech_pin_6_2','on')
+                or is_state('binary_sensor.ems_gas_burning_dhw','on') %}
+            GAS
+          {% elif is_state('switch.rele_16ch_tech_pin_8_2','on') %}
+            WOOD_BUFFER
+          {% elif is_state('switch.rele_16ch_tech_pin_2_2','on')
+                  or is_state('switch.rele_16ch_tech_pin_9_2','on') %}
+            ELECTRIC
+          {% else %}
+            NONE
+          {% endif %}
+
+  - binary_sensor:
+      - name: Kotel dřevo hoří
+        unique_id: kotel_drevo_hori
+        state: >-
+          {% set raw = states('binary_sensor.rfr2_test_kotel_api_hori_raw') %}
+          {% if raw in ['on','off'] %}
+            {{ raw == 'on' }}
+          {% else %}
+            {{ states('sensor.kotel_drevo_stav') in ['rozhorivani','horeni','dohorivani'] }}
+          {% endif %}
+
+      - name: Kotel dřevo dostupné teplo
+        unique_id: kotel_drevo_dostupne_teplo
+        state: >-
+          {% set raw = states('binary_sensor.rfr2_test_kotel_api_dostupne_teplo_raw') %}
+          {% if raw in ['on','off'] %}
+            {{ raw == 'on' }}
+          {% else %}
+            {{ is_state('input_boolean.topeni_drevem','on') }}
+          {% endif %}
+
+      - name: Kotel dřevo má palivo
+        unique_id: kotel_drevo_ma_palivo
+        state: >-
+          {% set raw = states('binary_sensor.rfr2_test_kotel_api_ma_palivo_raw') %}
+          {% if raw in ['on','off'] %}
+            {{ raw == 'on' }}
+          {% else %}
+            {{ states('sensor.kotel_drevo_stav') in ['zatop','rozhorivani','horeni','dohorivani'] }}
+          {% endif %}
+
+      - name: EMS Buffer Available
+        unique_id: ems_buffer_available
+        device_class: heat
+        state: "{{ is_state('input_boolean.zasobnik_natopen','on') }}"
+
+      - name: EMS Heating Demand
+        unique_id: ems_heating_demand
+        device_class: heat
+        state: "{{ is_state('switch.valves_group','on') }}"
+
+      - name: EMS Gas Available
+        unique_id: ems_gas_available
+        device_class: connectivity
+        availability: >-
+          {{ states('sensor.rs485convert_boiler_lockout') not in ['unknown','unavailable',''] }}
+        state: "{{ states('sensor.rs485convert_boiler_lockout') | int(-1) == 0 }}"
+
+      - name: EMS Gas Burning CH
+        unique_id: ems_gas_burning_ch
+        device_class: heat
+        state: "{{ is_state('sensor.rs485convert_boiler_state','3:Burning CH') }}"
+
+      - name: EMS Gas Burning DHW
+        unique_id: ems_gas_burning_dhw
+        device_class: heat
+        state: "{{ is_state('sensor.rs485convert_boiler_state','3:Burning DHW') }}"
+
+      - name: EMS Bottom Boiler Cold
+        unique_id: ems_bottom_boiler_cold
+        device_class: cold
+        state: >-
+          {{ states('sensor.ems_bottom_boiler_top_temp') | float(0) < 45
+             or states('sensor.ems_bottom_boiler_bottom_temp') | float(0) < 40 }}
+
+      - name: EMS Bottom Boiler Needs Heat
+        unique_id: ems_bottom_boiler_needs_heat
+        device_class: cold
+        state: >-
+          {{ states('sensor.ems_bottom_boiler_top_temp') | float(0) < 55
+             or states('sensor.ems_bottom_boiler_bottom_temp') | float(0) < 50 }}
+
+      - name: EMS Wood Boiler Heating Bottom Boiler Actual
+        unique_id: ems_wood_boiler_heating_bottom_boiler_actual
+        device_class: heat
+        state: >-
+          {{ is_state('switch.rele_16ch_tech_pin_8_2','on')
+             and is_state('input_boolean.servo_bojler_plyn','off')
+             and (is_state('binary_sensor.kotel_drevo_dostupne_teplo','on')
+                  or is_state('binary_sensor.ems_buffer_available','on')) }}
+
+script:
+  # ---------- Notifikace / 30min okno ----------
+  ems_heating_ask_wood:
+    alias: EMS Heating - dotaz na zatopení dřevem
+    mode: restart
+    fields:
+      reason:
+        required: false
+    sequence:
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.ems_heating_wood_answer
+        data:
+          option: unknown
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.ems_heating_wood_request_pending
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.ems_heating_wood_deadline
+        data:
+          timestamp: >-
+            {{ as_timestamp(now()) +
+               (states('input_number.ems_heating_wood_wait_minutes') | float(30) * 60) }}
+      - service: notify.mobile_app_sm_s928b
+        data:
+          title: "EMS: není dostupné teplo"
+          message: >-
+            {{ reason | default('Dům nebo bojler potřebuje teplo.') }}
+            Zatopíš dřevem? Pokud neodpovíš do
+            {{ states('input_number.ems_heating_wood_wait_minutes') | int(30) }} minut,
+            EMS použije plyn.
+          data:
+            channel: critical_alerts
+            importance: high
+            ttl: 0
+            priority: high
+            sticky: true
+            tag: ems_heating_wood_request
+            actions:
+              - action: EMS_HEATING_WOOD_YES
+                title: Zatopím dřevem
+              - action: EMS_HEATING_WOOD_NO
+                title: Použij plyn
+
+  ems_heating_clear_wood_request:
+    alias: EMS Heating - zrušit čekání na dřevo
+    mode: restart
+    sequence:
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.ems_heating_wood_request_pending
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.ems_heating_wood_answer
+        data:
+          option: unknown
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.ems_bottom_boiler_wood_plan
+        data:
+          option: unknown
+
+  # ---------- GAS DHW ochrana: snapshot a zavření hlavic ----------
+  ems_gas_dhw_close_house:
+    alias: EMS GAS DHW - zavřít topné okruhy
+    mode: restart
+    sequence:
+      # Snapshot dělej jen při prvním vstupu do guardu.
+      # Pin6 může později vyvolat stejný skript znovu a nesmí přepsat uložené ON stavy.
+      - if:
+          - condition: state
+            entity_id: input_boolean.ems_gas_dhw_guard_active
+            state: "off"
+        then:
+          - if:
+              - condition: template
+                value_template: "{{ states('climate.pokoj') != 'off' }}"
+            then:
+              - service: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.ems_restore_climate_pokoj
+            else:
+              - service: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.ems_restore_climate_pokoj
+
+          - if:
+              - condition: template
+                value_template: "{{ states('climate.test_kuchyn') != 'off' }}"
+            then:
+              - service: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.ems_restore_climate_kuchyn
+            else:
+              - service: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.ems_restore_climate_kuchyn
+
+          - if:
+              - condition: template
+                value_template: "{{ states('climate.koupelna') != 'off' }}"
+            then:
+              - service: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.ems_restore_climate_koupelna
+            else:
+              - service: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.ems_restore_climate_koupelna
+
+          - if:
+              - condition: template
+                value_template: "{{ states('climate.dilna') != 'off' }}"
+            then:
+              - service: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.ems_restore_climate_dilna
+            else:
+              - service: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.ems_restore_climate_dilna
+
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.ems_gas_dhw_guard_active
+
+      - service: climate.turn_off
+        target:
+          entity_id:
+            - climate.pokoj
+            - climate.test_kuchyn
+            - climate.koupelna
+            - climate.dilna
+
+      - service: switch.turn_off
+        target:
+          entity_id:
+            - switch.rele_16ch_tech_pin_11_2
+            - switch.rele_16ch_tech_pin_7_2
+
+      # PRACOVNÍ POLARITA: při jakémkoli GAS DHW musí být bojlerový ventil na plynu.
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.servo_bojler_plyn
+
+  ems_gas_dhw_restore_house:
+    alias: EMS GAS DHW - obnovit topné okruhy
+    mode: restart
+    sequence:
+      - if:
+          - condition: state
+            entity_id: input_boolean.ems_restore_climate_pokoj
+            state: "on"
+        then:
+          - service: climate.turn_on
+            target:
+              entity_id: climate.pokoj
+      - if:
+          - condition: state
+            entity_id: input_boolean.ems_restore_climate_kuchyn
+            state: "on"
+        then:
+          - service: climate.turn_on
+            target:
+              entity_id: climate.test_kuchyn
+      - if:
+          - condition: state
+            entity_id: input_boolean.ems_restore_climate_koupelna
+            state: "on"
+        then:
+          - service: climate.turn_on
+            target:
+              entity_id: climate.koupelna
+      - if:
+          - condition: state
+            entity_id: input_boolean.ems_restore_climate_dilna
+            state: "on"
+        then:
+          - service: climate.turn_on
+            target:
+              entity_id: climate.dilna
+
+      - service: input_boolean.turn_off
+        target:
+          entity_id:
+            - input_boolean.ems_gas_dhw_guard_active
+            - input_boolean.ems_restore_climate_pokoj
+            - input_boolean.ems_restore_climate_kuchyn
+            - input_boolean.ems_restore_climate_koupelna
+            - input_boolean.ems_restore_climate_dilna
+
+  # ---------- Otopná větev ----------
+  ems_hw_heating_from_wood_buffer:
+    alias: EMS HW - topení z dřeva/AKU
+    mode: restart
+    sequence:
+      - service: switch.turn_off
+        target:
+          entity_id: switch.rele_16ch_tech_pin_7_2
+      - service: switch.turn_on
+        target:
+          entity_id: switch.servo_aku_topeni
+      - delay:
+          seconds: "{{ states('input_number.ems_heating_source_valve_settle_seconds') | int(120) }}"
+      - condition: state
+        entity_id: binary_sensor.ems_heating_demand
+        state: "on"
+      - condition: state
+        entity_id: input_boolean.ems_gas_dhw_guard_active
+        state: "off"
+      - service: switch.turn_on
+        target:
+          entity_id: switch.rele_16ch_tech_pin_11_2
+
+  ems_hw_heating_from_gas:
+    alias: EMS HW - topení z plynu
+    mode: restart
+    sequence:
+      - service: switch.turn_off
+        target:
+          entity_id: switch.rele_16ch_tech_pin_11_2
+      - service: switch.turn_off
+        target:
+          entity_id: switch.servo_aku_topeni
+      - delay:
+          seconds: "{{ states('input_number.ems_heating_source_valve_settle_seconds') | int(120) }}"
+      - condition: state
+        entity_id: binary_sensor.ems_heating_demand
+        state: "on"
+      - condition: state
+        entity_id: input_boolean.ems_gas_dhw_guard_active
+        state: "off"
+      - service: switch.turn_on
+        target:
+          entity_id: switch.rele_16ch_tech_pin_7_2
+
+  ems_hw_heating_off:
+    alias: EMS HW - topení vypnout
+    mode: restart
+    sequence:
+      - service: switch.turn_off
+        target:
+          entity_id:
+            - switch.rele_16ch_tech_pin_11_2
+            - switch.rele_16ch_tech_pin_7_2
+
+  # ---------- TUV z dřeva / AKU ----------
+  ems_hw_dhw_wood_start:
+    alias: EMS HW - bojler dřevo/AKU start
+    mode: restart
+    sequence:
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.ems_dhw_wood_requested
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.ems_dhw_gas_requested
+      - service: switch.turn_off
+        target:
+          entity_id:
+            - switch.rele_16ch_tech_pin_6_2
+            - switch.rele_16ch_tech_pin_2_2
+            - switch.rele_16ch_tech_pin_9_2
+      - service: switch.turn_off
+        target:
+          entity_id: switch.rele_16ch_tech_pin_8_2
+
+      # PRACOVNÍ POLARITA: OFF = dřevo/AKU
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.servo_bojler_plyn
+
+      - delay:
+          seconds: "{{ states('input_number.ems_dhw_source_valve_settle_seconds') | int(185) }}"
+
+      - condition: state
+        entity_id: input_boolean.ems_dhw_wood_requested
+        state: "on"
+
+      - condition: state
+        entity_id: switch.rele_16ch_tech_pin_6_2
+        state: "off"
+
+      - service: switch.turn_on
+        target:
+          entity_id: switch.rele_16ch_tech_pin_8_2
+
+  ems_hw_dhw_wood_stop:
+    alias: EMS HW - bojler dřevo/AKU stop
+    mode: restart
+    sequence:
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.ems_dhw_wood_requested
+      - service: switch.turn_off
+        target:
+          entity_id: switch.rele_16ch_tech_pin_8_2
+
+  # ---------- TUV z plynu ----------
+  ems_hw_dhw_gas_start:
+    alias: EMS HW - bojler plyn start
+    mode: restart
+    sequence:
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.ems_dhw_gas_requested
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.ems_dhw_wood_requested
+
+      - service: script.ems_gas_dhw_close_house
+
+      - service: switch.turn_off
+        target:
+          entity_id:
+            - switch.rele_16ch_tech_pin_8_2
+            - switch.rele_16ch_tech_pin_2_2
+            - switch.rele_16ch_tech_pin_9_2
+            - switch.rele_16ch_tech_pin_11_2
+            - switch.rele_16ch_tech_pin_7_2
+
+      # Počkej, až jsou čtyři skutečné topné výstupy zavřené.
+      - wait_template: >-
+          {{ is_state('switch.rele_16ch_tech_pin_14_2','off')
+             and is_state('switch.rele_16ch_tech_pin_15_2','off')
+             and is_state('switch.rele_16ch_tech_pin_13_2','off')
+             and is_state('switch.rele_16ch_tech_pin_3_2','off') }}
+        timeout: "00:03:00"
+        continue_on_timeout: true
+
+      # PRACOVNÍ POLARITA: ON = plyn
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.servo_bojler_plyn
+
+      - delay:
+          seconds: "{{ states('input_number.ems_dhw_source_valve_settle_seconds') | int(185) }}"
+
+      - condition: state
+        entity_id: input_boolean.ems_dhw_gas_requested
+        state: "on"
+
+      - service: switch.turn_on
+        target:
+          entity_id: switch.rele_16ch_tech_pin_6_2
+
+  ems_hw_dhw_gas_stop:
+    alias: EMS HW - bojler plyn stop
+    mode: restart
+    sequence:
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.ems_dhw_gas_requested
+      - service: switch.turn_off
+        target:
+          entity_id: switch.rele_16ch_tech_pin_6_2
+      - delay: "00:00:30"
+      - condition: state
+        entity_id: switch.rele_16ch_tech_pin_6_2
+        state: "off"
+      - service: script.ems_gas_dhw_restore_house
+
+  ems_finish_bottom_boiler_force_gas:
+    alias: EMS - dokončit FORCE_GAS bojler
+    mode: restart
+    sequence:
+      - service: script.ems_hw_dhw_gas_stop
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.ems_bottom_boiler_force_mode
+        data:
+          option: "OFF"
+
+automation:
+  # Odpověď na společný 30min dotaz.
+  - id: ems_heating_wood_request_action
+    alias: EMS Heating - odpověď na zatopení dřevem
+    mode: restart
+    trigger:
+      - platform: event
+        event_type: mobile_app_notification_action
+    condition:
+      - condition: template
+        value_template: >-
+          {{ trigger.event.data.action in
+             ['EMS_HEATING_WOOD_YES','EMS_HEATING_WOOD_NO'] }}
+    action:
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.ems_heating_wood_answer
+        data:
+          option: >-
+            {{ 'will_heat'
+               if trigger.event.data.action == 'EMS_HEATING_WOOD_YES'
+               else 'will_not_heat' }}
+
+      # Kompatibilita se současným Boiler Managerem.
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.ems_bottom_boiler_wood_plan
+        data:
+          option: >-
+            {{ 'will_heat'
+               if trigger.event.data.action == 'EMS_HEATING_WOOD_YES'
+               else 'will_not_heat' }}
+
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.ems_heating_wood_request_pending
+
+  # Jakmile se skutečně objeví použitelné dřevo/AKU, starý slib už není potřeba.
+  - id: ems_heating_clear_wood_request_when_heat_available
+    alias: EMS Heating - zrušit dotaz po dostupnosti tepla
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id:
+          - binary_sensor.kotel_drevo_dostupne_teplo
+          - binary_sensor.ems_buffer_available
+        to: "on"
+    action:
+      - service: script.ems_heating_clear_wood_request
+
+  # Kritická hydraulická ochrana mimo Node-RED:
+  # pin6 může sepnout i ručně / termostatem.
+  - id: ems_gas_dhw_guard_on
+    alias: EMS GAS DHW guard - pin6 ON
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: switch.rele_16ch_tech_pin_6_2
+        to: "on"
+    action:
+      - service: script.ems_gas_dhw_close_house
+
+  - id: ems_gas_dhw_guard_off
+    alias: EMS GAS DHW guard - pin6 OFF
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: switch.rele_16ch_tech_pin_6_2
+        to: "off"
+        for: "00:00:30"
+    action:
+      - service: script.ems_gas_dhw_restore_house
+
+  # Pokud už teplo nikdo nepotřebuje, stará odpověď nesmí ovlivnit příští epizodu.
+  - id: ems_heating_clear_stale_wood_answer
+    alias: EMS Heating - vyčistit starou odpověď
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id:
+          - binary_sensor.ems_heating_demand
+          - binary_sensor.ems_bottom_boiler_cold
+    condition:
+      - condition: state
+        entity_id: binary_sensor.ems_heating_demand
+        state: "off"
+      - condition: state
+        entity_id: binary_sensor.ems_bottom_boiler_cold
+        state: "off"
+    action:
+      - service: script.ems_heating_clear_wood_request
+
+  # Stávající helper už nesmí znamenat "slíbil jsem zatopit".
+  # Odteď znamená skutečný hydronický ohřev spodního bojleru.
+  - id: ems_sync_wood_boiler_heating_bottom_boiler
+    alias: EMS sync - dřevo skutečně topí spodní bojler
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id:
+          - switch.rele_16ch_tech_pin_8_2
+          - input_boolean.servo_bojler_plyn
+          - binary_sensor.kotel_drevo_dostupne_teplo
+          - binary_sensor.ems_buffer_available
+    action:
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: binary_sensor.ems_wood_boiler_heating_bottom_boiler_actual
+                state: "on"
+            sequence:
+              - service: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.ems_wood_boiler_heating_bottom_boiler
+        default:
+          - service: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.ems_wood_boiler_heating_bottom_boiler
