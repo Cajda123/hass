@@ -1,0 +1,393 @@
+###############################################################################
+# EMS V28 - Notification Manager / EV evening grid consent
+#
+# ADDITIVE package. Nezasahuje do 02_ems_heating.yaml ani do jeho automatizací.
+###############################################################################
+
+input_select:
+  ems_id3_evening_grid_consent:
+    name: EMS ID.3 večerní použití sítě
+    icon: mdi:car-electric
+    options:
+      - AUTO
+      - PENDING
+      - ALLOW_GRID
+      - BATTERY_ONLY
+      - DENY_GRID
+
+  ems_id4_evening_grid_consent:
+    name: EMS ID.4 večerní použití sítě
+    icon: mdi:car-electric
+    options:
+      - AUTO
+      - PENDING
+      - ALLOW_GRID
+      - BATTERY_ONLY
+      - DENY_GRID
+
+input_text:
+  ems_id3_owner_notify_service:
+    name: EMS ID.3 notify service Gabča
+    max: 255
+    icon: mdi:cellphone-message
+
+input_number:
+  ems_id3_evening_grid_shortfall_kwh:
+    name: EMS ID.3 večerní deficit pro GRID
+    min: 0
+    max: 100
+    step: 0.1
+    mode: box
+    unit_of_measurement: kWh
+    icon: mdi:transmission-tower-import
+
+  ems_id4_evening_grid_shortfall_kwh:
+    name: EMS ID.4 večerní deficit pro GRID
+    min: 0
+    max: 100
+    step: 0.1
+    mode: box
+    unit_of_measurement: kWh
+    icon: mdi:transmission-tower-import
+
+  ems_id3_evening_expected_soc:
+    name: EMS ID.3 očekávané SOC bez sítě
+    min: 0
+    max: 100
+    step: 0.1
+    mode: box
+    unit_of_measurement: "%"
+    icon: mdi:battery-clock
+
+  ems_id4_evening_expected_soc:
+    name: EMS ID.4 očekávané SOC bez sítě
+    min: 0
+    max: 100
+    step: 0.1
+    mode: box
+    unit_of_measurement: "%"
+    icon: mdi:battery-clock
+
+  ems_id3_evening_battery_allocated_kwh:
+    name: EMS ID.3 večerní energie z domácí baterie
+    min: 0
+    max: 100
+    step: 0.1
+    mode: box
+    unit_of_measurement: kWh
+    icon: mdi:battery-arrow-down
+
+  ems_id4_evening_battery_allocated_kwh:
+    name: EMS ID.4 večerní energie z domácí baterie
+    min: 0
+    max: 100
+    step: 0.1
+    mode: box
+    unit_of_measurement: kWh
+    icon: mdi:battery-arrow-down
+
+mqtt:
+  sensor:
+    - name: EMS Notification Manager
+      unique_id: ems_notification_manager
+      state_topic: ems/notifications/state
+      value_template: >-
+        {% if value_json.enabled | default(false) %}
+          aktivní
+        {% else %}
+          vypnuto
+        {% endif %}
+      json_attributes_topic: ems/notifications/state
+      icon: mdi:message-alert-outline
+
+script:
+  ems_car_evening_plan_update:
+    alias: EMS uložit večerní plán auta
+    mode: queued
+    max: 20
+    fields:
+      car:
+        required: true
+      consent:
+        required: true
+      shortfall_kwh:
+        required: false
+      expected_soc:
+        required: false
+      allocated_kwh:
+        required: false
+    sequence:
+      - choose:
+          - conditions: "{{ car | upper == 'ID3' }}"
+            sequence:
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.ems_id3_evening_grid_consent
+                data:
+                  option: "{{ consent }}"
+              - service: input_number.set_value
+                target:
+                  entity_id: input_number.ems_id3_evening_grid_shortfall_kwh
+                data:
+                  value: "{{ shortfall_kwh | default(0) | float(0) }}"
+              - service: input_number.set_value
+                target:
+                  entity_id: input_number.ems_id3_evening_expected_soc
+                data:
+                  value: "{{ expected_soc | default(0) | float(0) }}"
+              - service: input_number.set_value
+                target:
+                  entity_id: input_number.ems_id3_evening_battery_allocated_kwh
+                data:
+                  value: "{{ allocated_kwh | default(0) | float(0) }}"
+          - conditions: "{{ car | upper == 'ID4' }}"
+            sequence:
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.ems_id4_evening_grid_consent
+                data:
+                  option: "{{ consent }}"
+              - service: input_number.set_value
+                target:
+                  entity_id: input_number.ems_id4_evening_grid_shortfall_kwh
+                data:
+                  value: "{{ shortfall_kwh | default(0) | float(0) }}"
+              - service: input_number.set_value
+                target:
+                  entity_id: input_number.ems_id4_evening_expected_soc
+                data:
+                  value: "{{ expected_soc | default(0) | float(0) }}"
+              - service: input_number.set_value
+                target:
+                  entity_id: input_number.ems_id4_evening_battery_allocated_kwh
+                data:
+                  value: "{{ allocated_kwh | default(0) | float(0) }}"
+
+automation:
+  # Actionable question. ID.4 -> David directly.
+  # ID.3 -> Gabča's direct mobile_app notifier from input_text.
+  # If it has not been configured yet, a plain notification still goes through
+  # the already existing script.notifikace_jen_gabca.
+  - id: ems_ev_evening_grid_question_v28
+    alias: EMS EV - večerní dotaz na použití sítě
+    mode: queued
+    max: 20
+    trigger:
+      - platform: mqtt
+        topic: ems/car/question
+    variables:
+      q: "{{ trigger.payload_json }}"
+      car: "{{ q.car | upper }}"
+      title: "{{ q.title }}"
+      message: "{{ q.message }}"
+      gabca_notify: "{{ states('input_text.ems_id3_owner_notify_service') | trim }}"
+      yes_action: "{{ 'EMS_EV_GRID_YES_ID3' if car == 'ID3' else 'EMS_EV_GRID_YES_ID4' }}"
+      no_action: "{{ 'EMS_EV_GRID_NO_ID3' if car == 'ID3' else 'EMS_EV_GRID_NO_ID4' }}"
+      tag: "{{ 'ems_ev_grid_question_id3' if car == 'ID3' else 'ems_ev_grid_question_id4' }}"
+    action:
+      - choose:
+          - conditions: "{{ car == 'ID4' }}"
+            sequence:
+              - service: notify.mobile_app_sm_s928b
+                data:
+                  title: "{{ title }}"
+                  message: "{{ message }}"
+                  data:
+                    channel: critical_alerts
+                    importance: high
+                    ttl: 0
+                    priority: high
+                    sticky: false
+                    tag: "{{ tag }}"
+                    actions:
+                      - action: "{{ yes_action }}"
+                        title: Ano, použij NT
+                      - action: "{{ no_action }}"
+                        title: Ne, bez sítě
+
+          - conditions: "{{ car == 'ID3' and gabca_notify.startswith('notify.mobile_app_') }}"
+            sequence:
+              - service: "{{ gabca_notify }}"
+                data:
+                  title: "{{ title }}"
+                  message: "{{ message }}"
+                  data:
+                    channel: critical_alerts
+                    importance: high
+                    ttl: 0
+                    priority: high
+                    sticky: false
+                    tag: "{{ tag }}"
+                    actions:
+                      - action: "{{ yes_action }}"
+                        title: Ano, použij NT
+                      - action: "{{ no_action }}"
+                        title: Ne, bez sítě
+
+        default:
+          - service: script.notifikace_jen_gabca
+            data:
+              title: "{{ title }}"
+              message: >-
+                {{ message }}
+                Tlačítka budou fungovat po nastavení entity
+                input_text.ems_id3_owner_notify_service na Gabčin notify.mobile_app_* service.
+                Do té doby lze volbu nastavit přes EMS ID.3 večerní použití sítě.
+              channel: critical_alerts
+              importance: high
+              ttl: 0
+
+  - id: ems_ev_evening_grid_answer_v28
+    alias: EMS EV - odpověď na večerní použití sítě
+    mode: queued
+    max: 20
+    trigger:
+      - platform: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: EMS_EV_GRID_YES_ID3
+        id: id3_yes
+      - platform: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: EMS_EV_GRID_NO_ID3
+        id: id3_no
+      - platform: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: EMS_EV_GRID_YES_ID4
+        id: id4_yes
+      - platform: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: EMS_EV_GRID_NO_ID4
+        id: id4_no
+
+    variables:
+      car: "{{ 'ID3' if trigger.id.startswith('id3_') else 'ID4' }}"
+      use_grid: "{{ trigger.id.endswith('_yes') }}"
+      consent_entity: >-
+        {{ 'input_select.ems_id3_evening_grid_consent'
+           if car == 'ID3'
+           else 'input_select.ems_id4_evening_grid_consent' }}
+      owner: "{{ 'gabca' if car == 'ID3' else 'david' }}"
+      target_soc: >-
+        {{ states('input_number.ems_id3_target_soc') | int(80)
+           if car == 'ID3'
+           else states('input_number.ems_id4_target_soc') | int(80) }}
+      shortfall: >-
+        {{ states('input_number.ems_id3_evening_grid_shortfall_kwh') | float(0)
+           if car == 'ID3'
+           else states('input_number.ems_id4_evening_grid_shortfall_kwh') | float(0) }}
+      gabca_notify: "{{ states('input_text.ems_id3_owner_notify_service') | trim }}"
+      tag: "{{ 'ems_ev_grid_question_id3' if car == 'ID3' else 'ems_ev_grid_question_id4' }}"
+
+    action:
+      # Tlačítko je samo o sobě explicitní volba uživatele. Nevyžadujeme PENDING:
+      # při závodu Node-RED -> HA nebo po reloadu helperu by se jinak kliknutí tiše zahodilo.
+      - service: input_select.select_option
+        target:
+          entity_id: "{{ consent_entity }}"
+        data:
+          option: "{{ 'ALLOW_GRID' if use_grid else 'DENY_GRID' }}"
+
+      # Okamžité potvrzení přímo přes stávající deterministic notify skripty.
+      - choose:
+          - conditions: "{{ car == 'ID4' }}"
+            sequence:
+              - service: script.notifikace_jen_david
+                data:
+                  title: "EMS: volba pro ID.4 uložena"
+                  message: >-
+                    {% if use_grid %}
+                      Chybějících asi {{ shortfall | round(1) }} kWh naplánuju v NT ze sítě,
+                      aby ID.4 mířilo na {{ target_soc }} %.
+                    {% else %}
+                      Pro ID.4 v této připojené session síť nepoužiju.
+                    {% endif %}
+                  channel: general
+                  importance: normal
+                  ttl: 0
+
+          - conditions: "{{ car == 'ID3' }}"
+            sequence:
+              - service: script.notifikace_jen_gabca
+                data:
+                  title: "EMS: volba pro ID.3 uložena"
+                  message: >-
+                    {% if use_grid %}
+                      Chybějících asi {{ shortfall | round(1) }} kWh naplánuju v NT ze sítě,
+                      aby ID.3 mířilo na {{ target_soc }} %.
+                    {% else %}
+                      Pro ID.3 v této připojené session síť nepoužiju.
+                    {% endif %}
+                  channel: general
+                  importance: normal
+                  ttl: 0
+
+      # Zachovej i MQTT event pro AI/telemetrii.
+      - service: mqtt.publish
+        data:
+          topic: ems/ai/notify
+          payload: >-
+            {{ {
+              'title': 'EMS: EV odpověď přijata',
+              'message': car ~ ': ' ~ ('GRID v NT povolen' if use_grid else 'GRID odmítnut'),
+              'target': owner,
+              'channel': 'general',
+              'importance': 'low',
+              'ttl': 0
+            } | tojson }}
+
+      # Na Davidově telefonu původní actionable notifikaci explicitně smaž.
+      - choose:
+          - conditions: "{{ car == 'ID4' }}"
+            sequence:
+              - service: notify.mobile_app_sm_s928b
+                data:
+                  message: clear_notification
+                  data:
+                    tag: "{{ tag }}"
+
+          - conditions: "{{ car == 'ID3' and gabca_notify.startswith('notify.mobile_app_') }}"
+            sequence:
+              - service: "{{ gabca_notify }}"
+                data:
+                  message: clear_notification
+                  data:
+                    tag: "{{ tag }}"
+
+  # Hard reset on real unplug: new plug-in session gets a fresh decision.
+  - id: ems_id3_evening_consent_reset_unplug_v28
+    alias: EMS ID.3 - reset večerního souhlasu po odpojení
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.ems_id3_wallbox_connected
+        to: "off"
+        for: "00:00:30"
+    action:
+      - service: script.ems_car_evening_plan_update
+        data:
+          car: ID3
+          consent: AUTO
+          shortfall_kwh: 0
+          expected_soc: 0
+          allocated_kwh: 0
+
+  - id: ems_id4_evening_consent_reset_unplug_v28
+    alias: EMS ID.4 - reset večerního souhlasu po odpojení
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.ems_id4_wallbox_connected
+        to: "off"
+        for: "00:00:30"
+    action:
+      - service: script.ems_car_evening_plan_update
+        data:
+          car: ID4
+          consent: AUTO
+          shortfall_kwh: 0
+          expected_soc: 0
+          allocated_kwh: 0
