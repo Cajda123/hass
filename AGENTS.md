@@ -2,6 +2,16 @@
 
 Tento projekt řídí reálné energetické zařízení v domě. Změny mohou ovlivnit baterii, měniče, wallboxy, bojlery a zatížení fází. Chovej se konzervativně.
 
+## Start here for EMS work
+
+Před jakoukoliv změnou EMS si přečti:
+
+1. `docs/EMS_CURRENT_STATE.md` – kanonický popis toho, jak EMS aktuálně funguje.
+2. `docs/EMS_SOURCE_MANIFEST.md` – které soubory jsou source of truth a jejich očekávané verze/blob SHA.
+3. Relevantní část `docs/decision_logic.md` a konkrétní runtime soubor, který se má měnit.
+
+Pokud dokumentace odporuje runtime kódu, runtime kód má přednost, ale rozpor musí být výslovně popsán a dokumentace opravena ve stejném commitu.
+
 ## Hard rules
 
 - Never delete files unless explicitly requested.
@@ -20,7 +30,7 @@ Tento projekt řídí reálné energetické zařízení v domě. Změny mohou ov
 2. Summarize what currently exists.
 3. Propose a small change.
 4. Make the smallest possible patch.
-5. Document EMS behavior changes in `docs/decision_logic.md`.
+5. Document EMS behavior changes in `docs/decision_logic.md` or, if the file is intentionally left historical, in `docs/EMS_CURRENT_STATE.md` plus a focused incident/change document.
 6. Mention any required manual Home Assistant or Node-RED reload/restart.
 
 ## Repository roles
@@ -44,10 +54,11 @@ Tento projekt řídí reálné energetické zařízení v domě. Změny mohou ov
 
 1. Do not overload phases, inverters or grid input.
 2. Do not drain the house battery below configured minimum SOC except by explicit manual override.
-3. Do not start large loads if current measurements are unavailable or stale.
+3. Do not start large loads if current measurements are unavailable/unknown/stale.
 4. Prefer PV surplus before grid import.
 5. Use cheap grid tariff only according to documented rules.
-6. When in doubt, fail safe: stop controllable loads rather than start them.
+6. Explicit per-car `DENY_GRID` is a hard veto: that car must not receive grid energy through planner, global GRID mode or wallbox force task until its physical plug-in session ends.
+7. When in doubt, fail safe: stop controllable loads rather than start them.
 
 ## Review checklist for any EMS logic change
 
@@ -59,3 +70,4 @@ Tento projekt řídí reálné energetické zařízení v domě. Změny mohou ov
 - What happens when SOC is below minimum?
 - What happens if PV forecast is wrong?
 - Is the behavior visible on the dashboard or in logs?
+- Does the change preserve `DENY_GRID` hard veto and 20-minute EV unplug/session semantics?
