@@ -1,5 +1,5 @@
 ###############################################################################
-# EMS V28 - Notification Manager / EV evening grid consent
+# EMS V28.6 - Notification Manager / EV evening grid consent
 #
 # ADDITIVE package. Nezasahuje do 02_ems_heating.yaml ani do jeho automatizací.
 ###############################################################################
@@ -357,37 +357,46 @@ automation:
                   data:
                     tag: "{{ tag }}"
 
-  # Hard reset on real unplug: new plug-in session gets a fresh decision.
-  - id: ems_id3_evening_consent_reset_unplug_v28
-    alias: EMS ID.3 - reset večerního souhlasu po odpojení
-    mode: restart
-    trigger:
-      - platform: state
-        entity_id: binary_sensor.ems_id3_wallbox_connected
-        to: "off"
-        for: "00:00:30"
-    action:
-      - service: script.ems_car_evening_plan_update
-        data:
-          car: ID3
-          consent: AUTO
-          shortfall_kwh: 0
-          expected_soc: 0
-          allocated_kwh: 0
+  # Odpojení/session reset vlastní Node-RED Notification Manager.
+  # V28.6 se explicitní DENY_GRID drží po celou fyzickou session a resetuje se
+  # až po 20 minutách souvislého raw odpojení. Krátké chyby/stavové přechody ho nesmažou.
 
-  - id: ems_id4_evening_consent_reset_unplug_v28
-    alias: EMS ID.4 - reset večerního souhlasu po odpojení
-    mode: restart
+  # Audit změn EV force režimů a večerního GRID souhlasu.
+  # Uloží i HA context.user_id / context_id, takže příště lze dohledat,
+  # zda změnu provedl uživatel, automatizace nebo jiný servisní call.
+  - id: ems_ev_control_audit_v28_6
+    alias: EMS EV - audit force a GRID consent změn
+    mode: queued
+    max: 50
     trigger:
       - platform: state
-        entity_id: binary_sensor.ems_id4_wallbox_connected
-        to: "off"
-        for: "00:00:30"
+        entity_id:
+          - input_select.ems_id3_wallbox_force_mode
+          - input_select.ems_id4_wallbox_force_mode
+          - input_select.ems_id3_evening_grid_consent
+          - input_select.ems_id4_evening_grid_consent
+          - input_select.ems_wallbox_mode
+    variables:
+      audit_payload: >-
+        {{ {
+          'ts': now().isoformat(),
+          'entity_id': trigger.entity_id,
+          'from': trigger.from_state.state if trigger.from_state is not none else none,
+          'to': trigger.to_state.state if trigger.to_state is not none else none,
+          'user_id': trigger.to_state.context.user_id if trigger.to_state is not none else none,
+          'context_id': trigger.to_state.context.id if trigger.to_state is not none else none,
+          'parent_id': trigger.to_state.context.parent_id if trigger.to_state is not none else none,
+          'source': 'home_assistant'
+        } | tojson }}
     action:
-      - service: script.ems_car_evening_plan_update
+      - service: mqtt.publish
         data:
-          car: ID4
-          consent: AUTO
-          shortfall_kwh: 0
-          expected_soc: 0
-          allocated_kwh: 0
+          topic: ems/audit/control_change
+          qos: 0
+          retain: false
+          payload: "{{ audit_payload }}"
+      - service: system_log.write
+        data:
+          level: info
+          logger: ems.audit
+          message: "EMS AUDIT {{ audit_payload }}"
