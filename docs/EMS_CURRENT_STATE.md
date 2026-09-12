@@ -2,7 +2,7 @@
 
 **Handoff target version:** v28.6  
 **Date:** 2026-09-12  
-**Git runtime baseline before applying v28.6 patch:** `c900958d17234d6a49f5f64f3d7c52932fdf1da1`  
+**Git runtime commit with v28.6 applied:** `44b80f3541cac66c38b38f71bbba8538627830d0`  
 **Repository:** `Cajda123/hass`  
 **Control stack:** Home Assistant + Node-RED + MQTT  
 **Primary rule:** Node-RED is the deterministic control system. AI may explain state, but must not become a second actuator/controller.
@@ -11,11 +11,13 @@ This file is the permanent handoff context for Codex and future maintainers. Bef
 
 ## Handoff status
 
-The v28.6 fix has been generated and regression-tested outside Git. Because `nodered/flows.json` is a large monolithic Node-RED export, the handoff includes a guarded repository patcher:
+**v28.6 is committed on `main` and is now the Git source of truth.** The runtime commit is `44b80f3541cac66c38b38f71bbba8538627830d0`. The three canonical runtime blobs are listed in `docs/EMS_SOURCE_MANIFEST.md` and were verified after the commit.
+
+The guarded migration/recovery patcher remains in the repository as:
 
 `tools/patch_ems_v28_6_hard_deny_20min.py`
 
-If the runtime blobs in `EMS_SOURCE_MANIFEST.md` still match the **v28.5 baseline**, Codex should run that patcher, review the diff, run syntax/regression checks, and commit the resulting three runtime files. After that commit, this document describes the actual Git runtime. Do not start unrelated EMS refactors before that handoff patch is applied.
+Do **not** run that patcher on the current v28.6 runtime; it intentionally accepts only the pre-v28.6 baseline and will refuse the current blobs. Future Codex work should edit the current runtime files directly, keep changes small/reviewable, and update this document plus `EMS_SOURCE_MANIFEST.md` whenever behavior or source-of-truth hashes change.
 
 ## 1. Source of truth
 
