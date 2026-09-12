@@ -1,0 +1,44 @@
+name: Apply EMS v28.6 runtime
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/ems-v28-6-apply.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restore notification baseline for guarded patcher
+        run: |
+          git show c900958d17234d6a49f5f64f3d7c52932fdf1da1:homeassistant/03_ems_notifications.yaml > homeassistant/03_ems_notifications.yaml
+
+      - name: Apply guarded EMS v28.6 patch
+        run: python3 tools/patch_ems_v28_6_hard_deny_20min.py .
+
+      - name: Verify expected blobs
+        run: |
+          test "$(git hash-object nodered/flows.json)" = "1390d47c4aa18983288d3bffd3850746afecc370"
+          test "$(git hash-object homeassistant/ems_base.yaml)" = "27401d42ea9d3b93a19ea319fcdcab2720785e9d"
+          test "$(git hash-object homeassistant/03_ems_notifications.yaml)" = "c2e88f5d0aae20d7e21923faab83ba1ab887e582"
+
+      - name: Commit runtime files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add nodered/flows.json homeassistant/ems_base.yaml homeassistant/03_ems_notifications.yaml
+          if git diff --cached --quiet; then
+            echo "Runtime already matches v28.6"
+            exit 0
+          fi
+          git commit -m "Apply EMS v28.6 hard DENY and 20min EV session rules"
+          git push origin HEAD:main
