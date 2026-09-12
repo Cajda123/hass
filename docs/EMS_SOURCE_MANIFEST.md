@@ -2,27 +2,17 @@
 
 **Canonical EMS version:** v28.6  
 **Prepared:** 2026-09-12  
-**Based on repository HEAD before v28.6:** `c900958d17234d6a49f5f64f3d7c52932fdf1da1`
+**v28.6 runtime commit:** `44b80f3541cac66c38b38f71bbba8538627830d0`
 
 This file lists the source-of-truth runtime files Codex should inspect before editing EMS.
 
 ## Handoff state
 
-The repository HEAD before the handoff patch is `c900958d17234d6a49f5f64f3d7c52932fdf1da1`.
+**v28.6 is applied on `main`.** Runtime commit: `44b80f3541cac66c38b38f71bbba8538627830d0`. The blobs below were re-read from GitHub after deployment and are the canonical source-of-truth hashes.
 
-If the three mutable runtime files still have these baseline blobs:
+The guarded patcher `tools/patch_ems_v28_6_hard_deny_20min.py` is retained only as migration/recovery documentation for the old v28.5 baseline. It is expected to refuse the current v28.6 blobs.
 
-- `nodered/flows.json` -> `a8e38895ac1f82eb00abe713a12017cd9a895bc5`
-- `homeassistant/ems_base.yaml` -> `afbe1eec4571134a9961e2df711fbd0ca3c37f97`
-- `homeassistant/03_ems_notifications.yaml` -> `213123e234449ec8179df3f523b84c2477e9a8b5`
-
-then v28.6 has **not yet been committed into the runtime files**. Run:
-
-`python3 tools/patch_ems_v28_6_hard_deny_20min.py .`
-
-The guarded patcher refuses to touch any unexpected baseline.
-
-## Runtime control files after applying v28.6
+## Runtime control files for v28.6
 
 | Path | Role | Expected Git blob SHA after v28.6 |
 |---|---|---|
